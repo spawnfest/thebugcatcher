@@ -34,6 +34,8 @@ defmodule EctoMorph do
     end
   end
 
+  def resolve_field_type(type), do: EctoMorph.FieldTypeResolver.run(type)
+
   defmacro define_ecto_schema_from_json(name, resolved_schema) do
     # Only create Ecto.Schema for objects type
     quote bind_quoted: [schema: resolved_schema, name: name], location: :keep do
@@ -47,7 +49,7 @@ defmodule EctoMorph do
         @primary_key nil
         embedded_schema do
           Enum.each(@properties, fn {key, %{"type" => type}} ->
-            field(:"#{key}", :"#{type}")
+            field(:"#{key}", EctoMorph.resolve_field_type(type))
           end)
         end
 
