@@ -161,7 +161,17 @@ defmodule EctoMorph do
     end)
   end
 
-  def schemaless_changeset(data, schema, params) do
+  defmodule Nested do
+    def __schema__(:primary_key) do
+      %{}
+    end
+
+    def __struct__() do
+      %{}
+    end
+  end
+
+  def schemaless_changeset(data, schema, attrs) do
     properties = schema.schema["properties"]
 
     types = Enum.reduce(properties, %{}, fn {key, schema_property}, acc ->
@@ -170,33 +180,55 @@ defmodule EctoMorph do
     end)
 
     types = types
-      |> Map.put(:child, :map)
-
-    changeset = {data, types}
-      |> Ecto.Changeset.cast(params, Map.keys(types))
-
-    child = Ecto.Changeset.get_field(changeset, :child)
-
-    child = Ecto.Changeset.change({child, %{name: :string}})
-    # child = schemaless_changeset(changeset, schema.child?, [])
-
-    changeset = changeset
-      |> Ecto.Changeset.put_change(:child, child)
-
-    types = changeset.types
       |> Map.put(:child, {:embed,
          %Ecto.Embedded{
            cardinality: :one,
            field: :child,
            # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
-           on_cast: fn struct, params -> nil end,
+           on_cast: fn struct, params -> 1 end,
            on_replace: :raise,
            ordered: true,
-           owner: nil,
-           related: nil,
+           owner: 2,
+           related: __MODULE__.Nested,
            unique: true
          }}
       )
+
+    child_properties = %{
+      "type" => "object",
+      "properties" => %{
+        "name" => %{
+          "type" => "string"
+        }
+      }
+    } |> ExJsonSchema.Schema.resolve()
+
+    changeset = {data, types}
+      |> Ecto.Changeset.cast(attrs, Map.keys(types) -- [:child])
+      |> Ecto.Changeset.cast_embed(:child, with: fn struct, attrs -> schemaless_changeset(struct, child_properties, attrs) end)
+
+    # child = Ecto.Changeset.get_field(changeset, :child)
+    #
+    # child = Ecto.Changeset.change({child, %{name: :string}})
+    # # child = schemaless_changeset(changeset, schema.child?, [])
+    #
+    # changeset = changeset
+    #   |> Ecto.Changeset.put_change(:child, child)
+    #
+    # types = changeset.types
+    #   |> Map.put(:child, {:embed,
+    #      %Ecto.Embedded{
+    #        cardinality: :one,
+    #        field: :child,
+    #        # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
+    #        on_cast: fn struct, params -> nil end,
+    #        on_replace: :raise,
+    #        ordered: true,
+    #        owner: nil,
+    #        related: nil,
+    #        unique: true
+    #      }}
+    #   )
 
     %{changeset | types: types}
   end

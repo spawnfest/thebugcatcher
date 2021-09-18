@@ -116,14 +116,14 @@ defmodule EctoMorphTest do
             "type" => "string",
             "format" => "date-time"
           },
-          # "child" => %{
-          #   "type" => "object",
-          #   "properties" => %{
-          #     "name" => %{
-          #       "type" => "string"
-          #     }
-          #   }
-          # }
+          "child" => %{
+            "type" => "object",
+            "properties" => %{
+              "name" => %{
+                "type" => "string"
+              }
+            }
+          }
         }
       }
       |> ExJsonSchema.Schema.resolve()
@@ -180,7 +180,8 @@ defmodule EctoMorphTest do
 
      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
        foo: [{"is invalid", [type: :string, validation: :cast]}],
-       occurred_at: [{"is invalid", [type: :utc_datetime, validation: :cast]}]
+       occurred_at: [{"is invalid", [type: :utc_datetime, validation: :cast]}],
+       child: %{name: [{"is invalid", [type: :string, validation: :cast]}]}
      }
     end
   end

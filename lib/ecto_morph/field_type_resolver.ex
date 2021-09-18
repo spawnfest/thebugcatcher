@@ -17,6 +17,9 @@ defmodule EctoMorph.FieldTypeResolver do
   def run("string", "date-time"), do: :utc_datetime
   def run("string", _), do: :string
 
+  # ?
+  def run("object", _), do: :embed
+
   def run(type, format), do: raise_error_for_unsupported_type(type, format)
 
   defp raise_error_for_unsupported_type(type, format \\ nil) do
