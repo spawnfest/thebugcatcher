@@ -71,7 +71,9 @@ defmodule EctoMorph.ExampleTest do
     example = %EctoMorph.Example{}
 
     changeset =
-      EctoMorph.Example.changeset(example, %{"foo" => %{"foo" => 1, "occurred_at" => "X"}})
+      EctoMorph.Example.changeset(example, %{
+        "foo" => %{"foo" => 1, "occurred_at" => "X", "child" => %{"name" => 1}}
+      })
 
     refute changeset.valid?
 
