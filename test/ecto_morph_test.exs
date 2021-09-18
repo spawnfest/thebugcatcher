@@ -1,5 +1,5 @@
 defmodule EctoMorphTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   describe "validate/2" do
   end
@@ -10,6 +10,12 @@ defmodule EctoMorphTest do
 
       old_path = EctoMorph.Config.json_schemas_path()
 
+      Application.put_env(
+        :ecto_morph,
+        :json_schemas_path,
+        new_path
+      )
+
       on_exit(fn ->
         Application.put_env(
           :ecto_morph,
@@ -17,14 +23,6 @@ defmodule EctoMorphTest do
           old_path
         )
       end)
-
-      Application.put_env(
-        :ecto_morph,
-        :json_schemas_path,
-        new_path
-      )
-
-      :ok
     end
 
     @tag path: "./test/support/json_schemas"
@@ -57,6 +55,11 @@ defmodule EctoMorphTest do
 
     @tag path: "./test/support/ajsdnoasubdosand_bad_path"
     test "raises error when invalid path" do
+      assert length(EctoMorph.get_all_modules()) == 0
+
+      EctoMorph.load_json_schemas!()
+
+      assert length(EctoMorph.get_all_modules()) == 0
     end
 
     @tag path: "./test/support/invalid_json_schemas"
@@ -65,6 +68,12 @@ defmodule EctoMorphTest do
   end
 
   describe "module_from_schema/0" do
+    setup do
+      on_exit(fn ->
+        Agent.update(EctoMorph, fn _ -> [] end)
+      end)
+    end
+
     test "returns a stringified module name for an resolved_schema" do
       resolved_schema =
         %{
