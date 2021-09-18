@@ -1,4 +1,4 @@
-defmodule EctoMorph.Example22Test do
+defmodule EctoMorph.Example2Test do
   use ExUnit.Case
 
   alias EctoMorph.Example2
