@@ -60,8 +60,9 @@ defmodule EctoMorph.ExampleTest do
                child: %{
                  __struct__: Foo.Child,
                  name: "bob",
-                },
-              },
+                 id: nil
+               }
+             },
              id: nil
            }
   end

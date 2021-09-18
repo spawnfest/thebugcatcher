@@ -43,25 +43,61 @@ defmodule EctoMorph do
   end
 
   defmacro add_ecto_field(key, schema_property) do
-    quote bind_quoted: [key: key, schema_property: schema_property], location: :keep do
-      case schema_property do
-        %{"type" => "object"} ->
+    quote location: :keep do
+      case unquote(schema_property) do
+        %{"$ref" => id} ->
+          # TODO: Find module and embed
           "TODO"
-        _ ->
-          field(:"#{key}", EctoMorph.type_for_schema_property(schema_property))
+
+        %{"type" => "object", "properties" => _} ->
+          IO.inspect(unquote(schema_property), label: "sp-53")
+          EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property))
+
+        %{"type" => _type} ->
+          field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema_property)))
       end
+    end
+  end
+
+  defmacro embed_one_inline_schema(key, schema_property) do
+    quote location: :keep do
+      EctoMorph.define_current_schema_property(unquote(schema_property))
+
+      embeds_one :"#{unquote(key)}", :"#{Macro.camelize(unquote(key))}" do
+        current_schema_property = EctoMorph.current_schema_property()
+
+        Enum.each(current_schema_property["properties"], fn {inner_key, inner_schema_property} ->
+          EctoMorph.add_ecto_field(inner_key, inner_schema_property)
+        end)
+      end
+
+      EctoMorph.undefine_current_schema_property()
+    end
+  end
+
+  def define_current_schema_property(schema_property) do
+    Agent.start_link(fn -> schema_property end, name: :current_ecto_morph_schema_property)
+  end
+
+  def current_schema_property do
+    Agent.get(:current_ecto_morph_schema_property, & &1)
+  end
+
+  def undefine_current_schema_property do
+    if Process.whereis(:current_ecto_morph_schema_property) do
+      Agent.stop(:current_ecto_morph_schema_property)
     end
   end
 
   defmacro define_ecto_schema_from_json(name, resolved_schema) do
     # Only create Ecto.Schema for objects type
-    quote bind_quoted: [schema: resolved_schema, name: name], location: :keep do
-      defmodule :"#{name}" do
+    quote location: :keep do
+      defmodule :"#{unquote(name)}" do
         use Ecto.Schema
         import Ecto.Changeset
         require EctoMorph
 
-        @schema schema
+        @schema unquote(resolved_schema)
         @properties @schema.schema["properties"]
 
         @primary_key nil
@@ -79,10 +115,28 @@ defmodule EctoMorph do
         end
 
         defp cast_fields_if_valid(%{valid?: true} = changeset) do
-          cast(changeset, changeset.params, __schema__(:fields))
+          cast_fields(changeset, __MODULE__, changeset.params)
         end
 
         defp cast_fields_if_valid(changeset), do: changeset
+
+        defp cast_fields(changeset_or_struct, schema_mod, params) do
+          embeds = schema_mod.__schema__(:embeds)
+          changeset = cast(changeset_or_struct, params, schema_mod.__schema__(:fields) -- embeds)
+
+          changeset =
+            Enum.reduce(embeds, changeset, fn embed, changeset ->
+              type_module = schema_mod.__schema__(:embed, embed).related
+
+              cast_embed(changeset, embed,
+                with: fn struct, embed_params ->
+                  cast_fields(struct, type_module, embed_params)
+                end
+              )
+            end)
+
+          changeset
+        end
 
         defp validate(changeset) do
           case ExJsonSchema.Validator.validate(@schema, changeset.params) do
