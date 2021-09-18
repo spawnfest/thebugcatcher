@@ -42,12 +42,24 @@ defmodule EctoMorph do
     EctoMorph.FieldTypeResolver.run(type)
   end
 
+  defmacro add_ecto_field(key, schema_property) do
+    quote bind_quoted: [key: key, schema_property: schema_property], location: :keep do
+      case schema_property do
+        %{"type" => "object"} ->
+          "TODO"
+        _ ->
+          field(:"#{key}", EctoMorph.type_for_schema_property(schema_property))
+      end
+    end
+  end
+
   defmacro define_ecto_schema_from_json(name, resolved_schema) do
     # Only create Ecto.Schema for objects type
     quote bind_quoted: [schema: resolved_schema, name: name], location: :keep do
       defmodule :"#{name}" do
         use Ecto.Schema
         import Ecto.Changeset
+        require EctoMorph
 
         @schema schema
         @properties @schema.schema["properties"]
@@ -55,7 +67,7 @@ defmodule EctoMorph do
         @primary_key nil
         embedded_schema do
           Enum.each(@properties, fn {key, schema_property} ->
-            field(:"#{key}", EctoMorph.type_for_schema_property(schema_property))
+            EctoMorph.add_ecto_field(key, schema_property)
           end)
         end
 
