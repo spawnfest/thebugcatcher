@@ -3,7 +3,7 @@ defmodule EctoMorph.FieldTypeResolver do
   Documentation for `EctoMorph.FieldTypeResolver`.
 
   ### Usage
-  
+
   Invoke `run/1` to resolve a type:
 
   ```
@@ -12,10 +12,14 @@ defmodule EctoMorph.FieldTypeResolver do
 
   """
 
-  def run("string"), do: :string
-  def run(type), do: raise_error_for_unsupported_type(type)
+  def run(type, format \\ nil)
 
-  defp raise_error_for_unsupported_type(type) do
-    raise "Type resolution NOT SUPPORTED! (type: #{type})"
+  def run("string", "date-time"), do: :utc_datetime
+  def run("string", _), do: :string
+
+  def run(type, format), do: raise_error_for_unsupported_type(type, format)
+
+  defp raise_error_for_unsupported_type(type, format \\ nil) do
+    raise "Type resolution NOT SUPPORTED! (type: #{type}, format: #{format})"
   end
 end

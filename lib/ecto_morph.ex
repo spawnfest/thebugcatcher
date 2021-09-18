@@ -34,8 +34,6 @@ defmodule EctoMorph do
     end
   end
 
-  def resolve_field_type(type), do: EctoMorph.FieldTypeResolver.run(type)
-
   defmacro define_ecto_schema_from_json(name, resolved_schema) do
     # Only create Ecto.Schema for objects type
     quote bind_quoted: [schema: resolved_schema, name: name], location: :keep do
@@ -48,8 +46,12 @@ defmodule EctoMorph do
 
         @primary_key nil
         embedded_schema do
-          Enum.each(@properties, fn {key, %{"type" => type}} ->
-            field(:"#{key}", EctoMorph.resolve_field_type(type))
+          Enum.each(@properties, fn
+            {key, %{"type" => type, "format" => format}} ->
+              field(:"#{key}", EctoMorph.FieldTypeResolver.run(type, format))
+
+            {key, %{"type" => type}} ->
+              field(:"#{key}", EctoMorph.FieldTypeResolver.run(type))
           end)
         end
 
@@ -126,4 +128,20 @@ defmodule EctoMorph do
   def add_to_registry(module, id), do: Agent.update(__MODULE__, &[{module, id} | &1])
   def get_from_registry(module), do: Agent.get(__MODULE__, & &1) |> Keyword.get(module)
   def get_all_modules, do: Agent.get(__MODULE__, & &1) |> Enum.map(&elem(&1, 0))
+
+  def get_module_for_id(schema_id) do
+    Agent.get(__MODULE__, & &1)
+    |> Enum.reduce(nil, fn {module, id}, acc ->
+      cond do
+        not is_nil(acc) ->
+          acc
+
+        id == schema_id ->
+          module
+
+        true ->
+          nil
+      end
+    end)
+  end
 end
