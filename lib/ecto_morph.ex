@@ -172,31 +172,32 @@ defmodule EctoMorph do
     types = types
       |> Map.put(:child, :map)
 
-    # types = types
-    #   |> Map.put(:child, {:embed,
-    #      %Ecto.Embedded{
-    #        cardinality: :one,
-    #        field: :child,
-    #        # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
-    #        on_cast: fn struct, params -> nil end,
-    #        on_replace: :raise,
-    #        ordered: true,
-    #        owner: nil,
-    #        related: nil,
-    #        unique: true
-    #      }}
-    #   )
-
     changeset = {data, types}
       |> Ecto.Changeset.cast(params, Map.keys(types))
 
     child = Ecto.Changeset.get_field(changeset, :child)
 
-    # child = Ecto.Changeset.change({child, %{name: :string}})
+    child = Ecto.Changeset.change({child, %{name: :string}})
+    # child = schemaless_changeset(changeset, schema.child?, [])
 
     changeset = changeset
       |> Ecto.Changeset.put_change(:child, child)
 
-    changeset
+    types = changeset.types
+      |> Map.put(:child, {:embed,
+         %Ecto.Embedded{
+           cardinality: :one,
+           field: :child,
+           # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
+           on_cast: fn struct, params -> nil end,
+           on_replace: :raise,
+           ordered: true,
+           owner: nil,
+           related: nil,
+           unique: true
+         }}
+      )
+
+    %{changeset | types: types}
   end
 end
