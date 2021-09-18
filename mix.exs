@@ -20,7 +20,7 @@ defmodule EctoMorph.MixProject do
   defp deps do
     [
       {:ex_json_schema, "~> 0.9.0"},
-      {:ecto, "~> 3.0"},
+      {:ecto, "~> 3.0"}
     ]
   end
 end

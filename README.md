@@ -3,11 +3,7 @@
 - Create an Ecto Schema that has a map as json with cast
 - Have a json input generate Ecto.Changeset errors based on a json schema
 
-## TODOs (where leaving off on night 1)
-- [ ] update `cast_json_schema` to handle nesting changesets
-
 ### Use case
-
 
 #### Example 1: Injesting JSON data & Coercing to Elixir data
 
@@ -44,7 +40,7 @@ Given an existing schema:
 defmodule MyApp.User do
   use Ecto.Schema
   import Ecto.Changeset
-  
+
   schema do
     field :potato, :string
   end

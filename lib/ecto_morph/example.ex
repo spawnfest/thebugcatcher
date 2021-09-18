@@ -3,7 +3,7 @@ defmodule EctoMorph.Example do
   import Ecto.Changeset
 
   embedded_schema do
-    field :foo, :map
+    field(:foo, :map)
   end
 
   def changeset(example, attrs) do
@@ -17,17 +17,23 @@ defmodule EctoMorph.Example do
 
     schema_changeset = schema_module.changeset(%{__struct__: schema_module}, schema_params)
 
-    {:embed,
-     %Ecto.Embedded{
-       cardinality: :one,
-       field: :foo,
-       on_cast: #Function<19.8626775/2 in Ecto.Changeset.on_cast_default/2>,
-       on_replace: :raise,
-       ordered: true,
-       owner: EctoMorph.Example2,
-       related: EctoMorph.Example2.Foo,
-       unique: true
-     }
+    new_types = %{
+      changeset.types
+      | :"#{field}" =>
+          {:embed,
+           %Ecto.Embedded{
+             cardinality: :one,
+             field: field,
+             on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
+             on_replace: :raise,
+             ordered: true,
+             owner: __MODULE__,
+             related: schema_module,
+             unique: true
+           }}
+    }
+
+    changeset = %{changeset | types: new_types}
 
     changeset
     |> put_change(field, schema_changeset)
@@ -39,12 +45,13 @@ defmodule EctoMorph.Example do
 
   def foo_schema do
     %{
-        "type" => "object",
-        "properties" => %{
-          "foo" => %{
-            "type" => "string"
-          }
+      "type" => "object",
+      "properties" => %{
+        "foo" => %{
+          "type" => "string"
         }
-      } |> ExJsonSchema.Schema.resolve()
+      }
+    }
+    |> ExJsonSchema.Schema.resolve()
   end
 end

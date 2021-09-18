@@ -14,9 +14,6 @@ defmodule EctoMorph.Example2Test do
 
     assert changeset.valid?
 
-    require IEx
-    IEx.pry
-
     struct = Ecto.Changeset.apply_changes(changeset)
 
     assert struct == %Example2{foo: %Example2.Foo{foo: "bar"}, id: nil}
@@ -30,9 +27,9 @@ defmodule EctoMorph.Example2Test do
     refute changeset.valid?
 
     assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-      foo: %{
-        foo: [{"is invalid", [type: :string, validation: :cast]}]
-      }
-    }
+             foo: %{
+               foo: [{"is invalid", [type: :string, validation: :cast]}]
+             }
+           }
   end
 end

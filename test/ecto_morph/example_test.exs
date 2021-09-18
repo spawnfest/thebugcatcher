@@ -3,14 +3,17 @@ defmodule EctoMorph.ExampleTest do
 
   setup do
     require EctoMorph
-    schema  = %{
-      "type" => "object",
-      "properties" => %{
-        "foo" => %{
-          "type" => "string"
+
+    schema =
+      %{
+        "type" => "object",
+        "properties" => %{
+          "foo" => %{
+            "type" => "string"
+          }
         }
       }
-    } |> ExJsonSchema.Schema.resolve()
+      |> ExJsonSchema.Schema.resolve()
 
     _return_value = EctoMorph.define_ecto_schema_from_json(Foo, schema)
 
@@ -24,12 +27,9 @@ defmodule EctoMorph.ExampleTest do
 
     assert changeset.valid?
 
-    require IEx
-    IEx.pry
-
     struct = Ecto.Changeset.apply_changes(changeset)
 
-    assert struct == %EctoMorph.Example{foo: %{foo: "bar"}, id: nil}
+    assert struct == %EctoMorph.Example{foo: %{__struct__: Foo, foo: "bar"}, id: nil}
   end
 
   test "adds errors for invalid data" do
@@ -40,9 +40,9 @@ defmodule EctoMorph.ExampleTest do
     refute changeset.valid?
 
     assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-      foo: %{
-        foo: [{"Type mismatch. Expected String but got Integer.", []}]
-      }
-    }
+             foo: %{
+               foo: [{"Type mismatch. Expected String but got Integer.", []}]
+             }
+           }
   end
 end

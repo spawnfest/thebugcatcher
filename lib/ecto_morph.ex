@@ -5,7 +5,6 @@ defmodule EctoMorph do
   def validate(_, _) do
   end
 
-
   defmacro define_ecto_schema_from_json(name, ex_json_schema) do
     # Only create Ecto.Schema for objects type
     quote bind_quoted: [schema: ex_json_schema, name: name], location: :keep do
@@ -19,7 +18,7 @@ defmodule EctoMorph do
         @primary_key nil
         embedded_schema do
           Enum.each(@properties, fn {key, %{"type" => type}} ->
-            field :"#{key}", :"#{type}"
+            field(:"#{key}", :"#{type}")
           end)
         end
 
@@ -27,18 +26,24 @@ defmodule EctoMorph do
           struct
           |> cast(params, [])
           |> validate()
-          # TODO: If valid
-          # |> cast(params, __schema__(:fields))
+          |> cast_fields_if_valid()
         end
+
+        defp cast_fields_if_valid(%{valid?: true} = changeset) do
+          cast(changeset, changeset.params, __schema__(:fields))
+        end
+
+        defp cast_fields_if_valid(changeset), do: changeset
 
         defp validate(changeset) do
           case ExJsonSchema.Validator.validate(@schema, changeset.params) do
             :ok ->
               changeset
+
             {:error, errors} ->
               Enum.reduce(errors, changeset, fn {msg, path}, changeset ->
                 field = field_from_path(path)
-                add_error(changeset, field, msg)
+                add_error(changeset, :"#{field}", msg)
               end)
           end
         end
