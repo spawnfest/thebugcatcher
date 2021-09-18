@@ -25,11 +25,13 @@ defmodule EctoMorph do
 
         def changeset(%__MODULE__{} = struct, params) do
           struct
-          |> cast(params, __schema__(:fields))
+          |> cast(params, [])
           |> validate()
+          # TODO: If valid
+          # |> cast(params, __schema__(:fields))
         end
 
-        defp validate(%{valid?: true} = changeset) do
+        defp validate(changeset) do
           case ExJsonSchema.Validator.validate(@schema, changeset.params) do
             :ok ->
               changeset
@@ -40,8 +42,6 @@ defmodule EctoMorph do
               end)
           end
         end
-
-        defp validate(%{valid?: false} = changeset), do: changeset
 
         defp field_from_path(path) do
           String.split(path, "#/") |> Enum.at(-1)

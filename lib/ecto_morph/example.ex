@@ -15,20 +15,22 @@ defmodule EctoMorph.Example do
   def cast_json_schema(changeset, field, schema_module) do
     schema_params = get_field(changeset, field)
 
-    case schema_module.changeset(%{__struct__: schema_module}, schema_params) do
-      %Ecto.Changeset{valid?: true} = schema_changeset ->
-        field_value =
-          schema_changeset
-          |> apply_changes()
-          |> Map.from_struct()
+    schema_changeset = schema_module.changeset(%{__struct__: schema_module}, schema_params)
 
-        put_change(changeset, field, field_value)
+    {:embed,
+     %Ecto.Embedded{
+       cardinality: :one,
+       field: :foo,
+       on_cast: #Function<19.8626775/2 in Ecto.Changeset.on_cast_default/2>,
+       on_replace: :raise,
+       ordered: true,
+       owner: EctoMorph.Example2,
+       related: EctoMorph.Example2.Foo,
+       unique: true
+     }
 
-      %Ecto.Changeset{errors: errors} ->
-        Enum.reduce(errors, changeset, fn error, changeset ->
-          add_error(changeset, field, error)
-        end)
-    end
+    changeset
+    |> put_change(field, schema_changeset)
   end
 
   def schema_module do

@@ -14,6 +14,9 @@ defmodule EctoMorph.Example2Test do
 
     assert changeset.valid?
 
+    require IEx
+    IEx.pry
+
     struct = Ecto.Changeset.apply_changes(changeset)
 
     assert struct == %Example2{foo: %Example2.Foo{foo: "bar"}, id: nil}

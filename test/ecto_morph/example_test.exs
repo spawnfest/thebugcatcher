@@ -24,6 +24,9 @@ defmodule EctoMorph.ExampleTest do
 
     assert changeset.valid?
 
+    require IEx
+    IEx.pry
+
     struct = Ecto.Changeset.apply_changes(changeset)
 
     assert struct == %EctoMorph.Example{foo: %{foo: "bar"}, id: nil}
@@ -36,8 +39,10 @@ defmodule EctoMorph.ExampleTest do
 
     refute changeset.valid?
 
-    assert changeset.errors == [
-             foo: {"Type mismatch. Expected String but got Integer. #/foo", []}
-           ]
+    assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+      foo: %{
+        foo: [{"Type mismatch. Expected String but got Integer.", []}]
+      }
+    }
   end
 end
