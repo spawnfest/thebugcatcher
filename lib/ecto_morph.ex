@@ -5,6 +5,49 @@ defmodule EctoMorph do
   def validate(_, _) do
   end
 
+  defmodule FileUtils do
+    def ls_r!(path \\ ".") do
+      cond do
+        File.regular?(path) ->
+          [path]
+
+        File.dir?(path) ->
+          path
+          |> File.ls!()
+          |> Enum.map(&Path.join(path, &1))
+          |> Enum.map(&ls_r!/1)
+          |> Enum.concat()
+
+        true ->
+          []
+      end
+    end 
+  end
+
+  defmodule Config do
+    @app_name :ecto_morph
+    @default_json_schemas_path "priv/ecto_morph"
+
+    def json_schemas_path() do
+      @app_name
+      |> Application.get_env(:json_schemas_path, @default_json_schemas_path)
+    end
+  end
+
+  def load_json_schemas!() do
+    Config.json_schemas_path()
+    |> FileUtils.ls_r!()
+    |> Enum.each(fn json_schema_path -> 
+      load_json_schema!(json_schema_path) 
+    end)
+  end
+
+  def load_json_schema!(file_path) do
+    file_path
+    |> File.read()
+    |> Jason.decode()
+  end
+
   defmacro define_ecto_schema_from_json(name, ex_json_schema) do
     # Only create Ecto.Schema for objects type
     quote bind_quoted: [schema: ex_json_schema, name: name], location: :keep do
