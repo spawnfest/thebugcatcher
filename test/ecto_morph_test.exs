@@ -103,4 +103,85 @@ defmodule EctoMorphTest do
       assert schema_name =~ "Schema.ID"
     end
   end
+
+  describe "schemaless_changeset/3" do
+    setup do
+      schema = %{
+        "type" => "object",
+        "properties" => %{
+          "foo" => %{
+            "type" => "string"
+          },
+          "occurred_at" => %{
+            "type" => "string",
+            "format" => "date-time"
+          },
+          # "child" => %{
+          #   "type" => "object",
+          #   "properties" => %{
+          #     "name" => %{
+          #       "type" => "string"
+          #     }
+          #   }
+          # }
+        }
+      }
+      |> ExJsonSchema.Schema.resolve()
+
+      %{schema: schema}
+    end
+
+    test "valid attrs", %{schema: schema} do
+      data = %{}
+
+      occurred_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      params = %{
+        foo: "bar",
+        occurred_at: occurred_at |> DateTime.to_iso8601(),
+        child: %{
+          name: "bob"
+        }
+      }
+
+      changeset = EctoMorph.schemaless_changeset(data, schema, params)
+
+      assert changeset.valid?
+
+      struct = Ecto.Changeset.apply_changes(changeset)
+
+      assert struct == %{
+        foo: "bar",
+        occurred_at: occurred_at,
+        child: %{
+          name: "bob"
+        }
+      }
+    end
+
+    test "invalid attrs", %{schema: schema} do
+      data = %{}
+      params = %{
+        foo: 1,
+        occurred_at: 1,
+        child: %{
+          name: 1
+        }
+      }
+
+      changeset = EctoMorph.schemaless_changeset(data, schema, params)
+
+      refute changeset.valid?
+
+      # assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+      #          foo: [{"Type mismatch. Expected String but got Integer.", []}],
+      #          occurred_at: [{"Expected to be a valid ISO 8601 date-time.", []}]
+      #        }
+
+     assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+       foo: [{"is invalid", [type: :string, validation: :cast]}],
+       occurred_at: [{"is invalid", [type: :utc_datetime, validation: :cast]}]
+     }
+    end
+  end
 end

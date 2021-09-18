@@ -160,4 +160,43 @@ defmodule EctoMorph do
       end
     end)
   end
+
+  def schemaless_changeset(data, schema, params) do
+    properties = schema.schema["properties"]
+
+    types = Enum.reduce(properties, %{}, fn {key, schema_property}, acc ->
+      type = type_for_schema_property(schema_property)
+      Map.put(acc, String.to_atom(key), type)
+    end)
+
+    types = types
+      |> Map.put(:child, :map)
+
+    # types = types
+    #   |> Map.put(:child, {:embed,
+    #      %Ecto.Embedded{
+    #        cardinality: :one,
+    #        field: :child,
+    #        # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
+    #        on_cast: fn struct, params -> nil end,
+    #        on_replace: :raise,
+    #        ordered: true,
+    #        owner: nil,
+    #        related: nil,
+    #        unique: true
+    #      }}
+    #   )
+
+    changeset = {data, types}
+      |> Ecto.Changeset.cast(params, Map.keys(types))
+
+    child = Ecto.Changeset.get_field(changeset, :child)
+
+    # child = Ecto.Changeset.change({child, %{name: :string}})
+
+    changeset = changeset
+      |> Ecto.Changeset.put_change(:child, child)
+
+    changeset
+  end
 end
