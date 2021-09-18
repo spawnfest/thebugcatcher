@@ -1,4 +1,4 @@
-defmodule ChangeMeTest do
+defmodule EctoMorphTest do
   use ExUnit.Case
 
   describe "validate/2" do

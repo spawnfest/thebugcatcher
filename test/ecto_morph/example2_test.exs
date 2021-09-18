@@ -1,7 +1,7 @@
-defmodule ChangeMe.Example22Test do
+defmodule EctoMorph.Example22Test do
   use ExUnit.Case
 
-  alias ChangeMe.Example2
+  alias EctoMorph.Example2
 
   # setup do
   #   :ok

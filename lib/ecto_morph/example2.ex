@@ -1,4 +1,4 @@
-defmodule ChangeMe.Example2 do
+defmodule EctoMorph.Example2 do
   use Ecto.Schema
   import Ecto.Changeset
 

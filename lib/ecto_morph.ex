@@ -1,6 +1,6 @@
-defmodule ChangeMe do
+defmodule EctoMorph do
   @moduledoc """
-  Documentation for `ChangeMe`.
+  Documentation for `EctoMorph`.
   """
   def validate(_, _) do
   end
