@@ -33,12 +33,12 @@ defmodule EctoMorph.Schema.DefinerTest do
             "car" => %{
               "$ref" => "#/$defs/car"
             },
-            # "cars" => %{
-            #   "type" => "array",
-            #   "items" => %{
-            #     "$ref" => "#/$defs/car"
-            #   }
-            # },
+            "cars" => %{
+              "type" => "array",
+              "items" => %{
+                "$ref" => "#/$defs/car"
+              }
+            },
             "bars" => %{
               "type" => "array",
               "items" => %{
@@ -92,6 +92,11 @@ defmodule EctoMorph.Schema.DefinerTest do
         "car" => %{
           "color" => "blue"
         },
+        "cars" => [
+          %{
+            "color" => "red"
+          }
+        ],
         "bars" => [
           %{"name" => "barname"},
           %{"name" => "wildrover"}
@@ -124,6 +129,13 @@ defmodule EctoMorph.Schema.DefinerTest do
                  color: "blue",
                  id: nil
                },
+               cars: [
+                 %{
+                   __struct__: Foo.Cars,
+                   color: "red",
+                   id: nil
+                 }
+               ],
                bars: [
                  %{
                    __struct__: Foo.Bars,
