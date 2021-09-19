@@ -274,6 +274,23 @@ defmodule EctoMorph do
     end
   end
 
+  def field_from_path(path) do
+    String.split(path, "#/")
+    |> Enum.at(-1)
+    |> String.split("/")
+    |> Enum.map(&String.to_atom/1)
+  end
+
+  def apply_field_path_error(changeset, msg, [field | tail]) do
+    field_changeset = Ecto.Changeset.get_change(changeset, field)
+
+    Ecto.Changeset.put_change(
+      changeset,
+      field,
+      apply_field_path_error(field_changeset, msg, tail)
+    )
+  end
+
   def schemaless_changeset(data, attrs, schema, node \\ nil) do
     properties = node["properties"] || schema.schema["properties"]
 
@@ -303,17 +320,22 @@ defmodule EctoMorph do
     end)
 
     if changeset.valid? do
-      # case ExJsonSchema.Validator.validate(@schema, changeset.params) do
-      #   :ok ->
-      #     changeset
-      #
-      #   {:error, errors} ->
-      #     Enum.reduce(errors, changeset, fn {msg, path}, changeset ->
-      #       field = field_from_path(path)
-      #       add_error(changeset, :"#{field}", msg)
-      #     end)
-      # end
-      changeset
+      case ExJsonSchema.Validator.validate(schema, changeset.params) do
+        :ok ->
+          changeset
+
+        {:error, errors} ->
+          Enum.reduce(errors, changeset, fn {msg, path}, changeset ->
+            fields = field_from_path(path)
+
+            if length(fields) == 1 do
+              [field] = fields
+              Ecto.Changeset.add_error(changeset, field, msg)
+            else
+              apply_field_path_error(changeset, msg, fields)
+            end
+          end)
+      end
     else
       changeset
     end
