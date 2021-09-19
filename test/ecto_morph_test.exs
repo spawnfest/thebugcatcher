@@ -31,23 +31,35 @@ defmodule EctoMorphTest do
 
       EctoMorph.load_json_schemas!()
 
-      [defined_module_name] = EctoMorph.get_all_modules()
+      defined_module_names = EctoMorph.get_all_modules()
 
-      defined_module = :"#{defined_module_name}"
+      assert Enum.count(defined_module_names) > 0
 
-      assert Code.ensure_loaded?(defined_module)
+      Enum.each(defined_module_names, fn defined_module_name ->
+        defined_module = :"#{defined_module_name}"
 
-      defined_functions = defined_module.__info__(:functions)
+        assert Code.ensure_loaded?(defined_module)
 
-      assert {:__schema__, 1} in defined_functions
+        defined_functions = defined_module.__info__(:functions)
 
-      assert {:changeset, 2} in defined_functions
+        assert {:__schema__, 1} in defined_functions
+
+        assert {:changeset, 2} in defined_functions
+      end)
+
+      datetime_schema = EctoMorph.get_module_for_id("datetime_schema")
+      datetime_schema = :"#{datetime_schema}"
+      assert datetime_schema.__schema__(:type, :occured_at) == :utc_datetime
 
       on_exit(fn ->
-        :code.delete(defined_module)
-        :code.purge(defined_module)
+        Enum.each(defined_module_names, fn defined_module_name ->
+          defined_module = :"#{defined_module_name}"
 
-        refute Code.ensure_loaded?(defined_module)
+          :code.delete(defined_module)
+          :code.purge(defined_module)
+
+          refute Code.ensure_loaded?(defined_module)
+        end)
 
         Agent.update(EctoMorph, fn _ -> [] end)
       end)

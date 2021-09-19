@@ -1,0 +1,10 @@
+{
+  "$id": "datetime_schema",
+  "type": "object",
+  "properties": {
+    "occured_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
