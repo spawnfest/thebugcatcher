@@ -2,7 +2,7 @@ defmodule EctoMorph do
   @moduledoc """
   Documentation for `EctoMorph`.
   """
-  alias EctoMorph.FileUtils
+  alias EctoMorph.{Config, FileUtils}
 
   def validate(_, _) do
   end
@@ -14,25 +14,6 @@ defmodule EctoMorph do
   def type_for_schema_property(%{"type" => type}) do
     EctoMorph.FieldTypeResolver.run(type)
   end
-
-  # NOOOO
-  # defmacro add_ecto_field_derp(key, schema_property, schema) do
-  #   quote location: :keep do
-  #     IO.inspect(unquote(schema_property), label: "derp/schema_prop")
-  #     case unquote(schema_property) do
-  #       %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
-  #         new_schema_property = get_in(unquote(schema).schema, relative_refs_path)
-  #         IO.inspect(new_schema_property, label: "from derp")
-  #         EctoMorph.add_ecto_field(unquote(key), new_schema_property, unquote(schema))
-
-  #       %{"type" => "object", "properties" => _} ->
-  #         EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property), unquote(schema))
-
-  #       %{"type" => _type} ->
-  #         field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema_property)))
-  #     end
-  #   end
-  # end
 
   defmacro add_ecto_field(key, schema_property, schema) do
     quote location: :keep do
@@ -98,6 +79,8 @@ defmodule EctoMorph do
       defmodule :"#{unquote(name)}" do
         use Ecto.Schema
         import Ecto.Changeset
+        import EctoMorph.Schema.Helpers
+
         require EctoMorph
 
         @schema unquote(resolved_schema)
@@ -118,94 +101,20 @@ defmodule EctoMorph do
           |> maybe_apply_nested_ecto_morph_errors()
         end
 
-        defp cast_fields_if_valid(%{valid?: true} = changeset) do
-          cast_fields(changeset, __MODULE__, changeset.params)
-        end
-
-        defp cast_fields_if_valid(changeset), do: changeset
-
         defp cast_fields(changeset) do
-          cast_fields(changeset, __MODULE__, changeset.params)
-        end
-
-        defp cast_fields(changeset_or_struct, schema_mod, params) do
-          embeds = schema_mod.__schema__(:embeds)
-          changeset = cast(changeset_or_struct, params, schema_mod.__schema__(:fields) -- embeds)
-
-          changeset =
-            Enum.reduce(embeds, changeset, fn embed, changeset ->
-              type_module = schema_mod.__schema__(:embed, embed).related
-
-              cast_embed(changeset, embed,
-                with: fn struct, embed_params ->
-                  cast_fields(struct, type_module, embed_params)
-                end
-              )
-            end)
-
-          changeset
-        end
-
-        def maybe_apply_nested_ecto_morph_errors(%{valid?: true} = changeset) do
-          changeset
-        end
-
-        def maybe_apply_nested_ecto_morph_errors(changeset) do
-          errors = Keyword.get_values(changeset.errors, :nested_ecto_morph_errors)
-
-          if length(errors) >= 1 do
-            Enum.reduce(errors, changeset, fn {msg, keys}, changeset ->
-              fields = Keyword.fetch!(keys, :fields)
-              apply_field_path_error(changeset, msg, fields)
-            end)
-          else
-            changeset
-          end
-        end
-
-        def apply_field_path_error(changeset, msg, [field]) do
-          add_error(changeset, field, msg)
-        end
-
-        def apply_field_path_error(changeset, msg, [field | tail]) do
-          field_changeset = get_change(changeset, field)
-
-          put_change(
+          recursive_cast_fields_for(
             changeset,
-            field,
-            apply_field_path_error(field_changeset, msg, tail)
+            __MODULE__,
+            changeset.params
           )
         end
 
-        defp maybe_validate_json_schema(%{valid?: false} = changeset) do
+        def maybe_validate_json_schema(%{valid?: false} = changeset) do
           changeset
         end
 
-        defp maybe_validate_json_schema(%{valid?: true} = changeset) do
-          case ExJsonSchema.Validator.validate(@schema, changeset.params) do
-            :ok ->
-              changeset
-
-            {:error, errors} ->
-              Enum.reduce(errors, changeset, fn {msg, path}, changeset ->
-                fields = field_from_path(path)
-
-                if length(fields) == 1 do
-                  [field] = fields
-                  add_error(changeset, field, msg)
-                else
-                  changeset
-                  |> add_error(:nested_ecto_morph_errors, msg, fields: fields)
-                end
-              end)
-          end
-        end
-
-        defp field_from_path(path) do
-          String.split(path, "#/")
-          |> Enum.at(-1)
-          |> String.split("/")
-          |> Enum.map(&String.to_atom/1)
+        def maybe_validate_json_schema(%{valid?: true} = changeset) do
+          validate_json_schema(changeset, @schema)
         end
       end
     end
