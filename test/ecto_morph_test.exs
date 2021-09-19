@@ -127,10 +127,21 @@ defmodule EctoMorphTest do
           "name" => %{
             "$ref" => "#/$defs/name"
           },
+          "car" => %{
+            "$ref" => "#/$defs/car"
+          },
         },
         "$defs" => %{
           "name" => %{
             "type" => "string"
+          },
+          "car" => %{
+            "type" => "object",
+            "properties" => %{
+              "color" => %{
+                "type" => "string"
+              }
+            }
           },
         }
       }
@@ -150,7 +161,10 @@ defmodule EctoMorphTest do
         child: %{
           name: "bob"
         },
-        name: "Adi"
+        name: "Adi",
+        car: %{
+          color: "red"
+        }
       }
 
       changeset = EctoMorph.schemaless_changeset(data, params, schema)
@@ -165,7 +179,10 @@ defmodule EctoMorphTest do
         child: %{
           name: "bob"
         },
-        name: "Adi"
+        name: "Adi",
+        car: %{
+          color: "red"
+        }
       }
     end
 
