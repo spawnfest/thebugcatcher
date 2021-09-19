@@ -11,7 +11,7 @@ defmodule EctoMorph.Schema.DefinerTest do
         %{
           "type" => "object",
           "properties" => %{
-            "foo" => %{
+            "title" => %{
               "type" => "string"
             },
             "occurred_at" => %{
@@ -61,6 +61,18 @@ defmodule EctoMorph.Schema.DefinerTest do
               "items" => %{
                 "type" => "string"
               }
+            },
+            "truck" => %{
+              "type" => "object",
+              "properties" => %{
+                "color" => %{
+                  "type" => "string"
+                },
+                "size" => %{
+                  "type" => "integer"
+                }
+              },
+              "required" => ["color", "size"]
             }
           },
           "$defs" => %{
@@ -89,7 +101,7 @@ defmodule EctoMorph.Schema.DefinerTest do
       occurred_at = DateTime.utc_now() |> DateTime.truncate(:second)
 
       foo_params = %{
-        "foo" => "bar",
+        "title" => "bar",
         "occurred_at" => occurred_at |> DateTime.to_iso8601(),
         "child" => %{
           "name" => "bob"
@@ -111,7 +123,11 @@ defmodule EctoMorph.Schema.DefinerTest do
         "tags" => [
           "cool",
           "sometimes"
-        ]
+        ],
+        "truck" => %{
+          "color" => "yellow",
+          "size" => 1
+        }
       }
 
       # Needs to be dynamic to avoid warnings
@@ -123,7 +139,7 @@ defmodule EctoMorph.Schema.DefinerTest do
 
       assert struct == %{
                __struct__: Foo,
-               foo: "bar",
+               title: "bar",
                occurred_at: occurred_at,
                child: %{
                  __struct__: Foo.Child,
@@ -159,7 +175,96 @@ defmodule EctoMorph.Schema.DefinerTest do
                tags: [
                  "cool",
                  "sometimes"
+               ],
+               truck: %{
+                 __struct__: Foo.Truck,
+                 id: nil,
+                 color: "yellow",
+                 size: 1
+               }
+             }
+    end
+
+    test "adds errors for invalid data string field assignment" do
+      invalid_params = %{
+        "title" => 1
+      }
+
+      # Needs to be dynamic to avoid warnings
+      changeset = apply(Foo, :changeset, [%{__struct__: Foo}, invalid_params])
+
+      refute changeset.valid?
+
+      # error assertions
+      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+               title: [{"is invalid", [type: :string, validation: :cast]}]
+             }
+    end
+
+    test "adds errors for invalid data array field assignment" do
+      invalid_params = %{
+        "names" => [1]
+      }
+
+      # Needs to be dynamic to avoid warnings
+      changeset = apply(Foo, :changeset, [%{__struct__: Foo}, invalid_params])
+
+      refute changeset.valid?
+
+      # error assertions
+      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+               names: [{"is invalid", [type: {:array, :string}, validation: :cast]}]
+             }
+    end
+
+    test "adds errors for invalid data array-of-objects field assignment" do
+      invalid_params = %{
+        "cars" => [
+          %{"color" => "apple red"},
+          %{"color" => "banana yellow"},
+          %{}
+        ]
+      }
+
+      # Needs to be dynamic to avoid warnings
+      changeset = apply(Foo, :changeset, [%{__struct__: Foo}, invalid_params])
+
+      refute changeset.valid?
+
+      # error assertions
+      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+               cars: [
+                 %{},
+                 %{},
+                 %{
+                   color: [
+                     {"Required property color was not present.", []}
+                   ]
+                 }
                ]
+             }
+    end
+
+    test "adds errors for mulitple required fields" do
+      invalid_params = %{
+        "truck" => %{}
+      }
+
+      # Needs to be dynamic to avoid warnings
+      changeset = apply(Foo, :changeset, [%{__struct__: Foo}, invalid_params])
+
+      refute changeset.valid?
+
+      # error assertions
+      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+               truck: %{
+                 color: [
+                   {"Required property color was not present.", []}
+                 ],
+                 size: [
+                   {"Required property size was not present.", []}
+                 ]
+               }
              }
     end
   end

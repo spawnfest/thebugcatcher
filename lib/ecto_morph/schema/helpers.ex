@@ -41,10 +41,13 @@ defmodule EctoMorph.Schema.Helpers do
   end
 
   def maybe_apply_nested_ecto_morph_errors(changeset) do
-    errors = Keyword.get_values(changeset.errors, :nested_ecto_morph_errors)
+    nested_errors = Keyword.get_values(changeset.errors, :nested_ecto_morph_errors)
+    errors = Keyword.delete(changeset.errors, :nested_ecto_morph_errors)
 
-    if length(errors) >= 1 do
-      Enum.reduce(errors, changeset, fn {msg, keys}, changeset ->
+    changeset = %{changeset | errors: errors}
+
+    if length(nested_errors) >= 1 do
+      Enum.reduce(nested_errors, changeset, fn {msg, keys}, changeset ->
         fields = Keyword.fetch!(keys, :fields)
         apply_field_path_error(changeset, msg, fields)
       end)
@@ -57,6 +60,12 @@ defmodule EctoMorph.Schema.Helpers do
     Ecto.Changeset.add_error(changeset, field, msg)
   end
 
+  defp apply_field_path_error(changeset_list, msg, [n | tail]) when is_integer(n) do
+    List.update_at(changeset_list, n, fn field_changeset ->
+      apply_field_path_error(field_changeset, msg, tail)
+    end)
+  end
+
   defp apply_field_path_error(changeset, msg, [field | tail]) do
     field_changeset = Ecto.Changeset.get_change(changeset, field)
 
@@ -67,6 +76,29 @@ defmodule EctoMorph.Schema.Helpers do
           field,
           apply_field_path_error(field_changeset, msg, tail)
         )
+
+      changeset_list when is_list(changeset_list) ->
+        case tail do
+          [n] when is_integer(n) ->
+            changeset_list =
+              changeset_list
+              |> List.update_at(n, fn field_changeset ->
+                Ecto.Changeset.add_error(field_changeset, field, msg)
+              end)
+
+            Ecto.Changeset.put_change(
+              changeset,
+              field,
+              changeset_list
+            )
+
+          _ ->
+            Ecto.Changeset.put_change(
+              changeset,
+              field,
+              apply_field_path_error(changeset_list, msg, tail)
+            )
+        end
 
       _ ->
         changeset
@@ -89,15 +121,87 @@ defmodule EctoMorph.Schema.Helpers do
 
     case fields do
       [field] ->
-        Ecto.Changeset.add_error(changeset, field, msg)
+        cond do
+          msg =~ ~r/Required property/ ->
+            required_field =
+              Regex.named_captures(~r/Required property (?<field>\w+) was not present./, msg)
+              |> Map.get("field")
+              |> String.to_atom()
+
+            Ecto.Changeset.add_error(
+              changeset,
+              :nested_ecto_morph_errors,
+              msg,
+              fields: [field] ++ [required_field]
+            )
+
+          msg =~ ~r/Required properties/ ->
+            required_fields =
+              Regex.named_captures(
+                ~r/Required properties (?<fields>[\w|,|\s]*) were not present./,
+                msg
+              )
+              |> Map.get("fields")
+              |> String.split(", ")
+              |> Enum.map(&String.to_atom/1)
+
+            Enum.reduce(required_fields, changeset, fn required_field, cs ->
+              Ecto.Changeset.add_error(
+                cs,
+                :nested_ecto_morph_errors,
+                "Required property #{required_field} was not present.",
+                fields: [field] ++ [required_field]
+              )
+            end)
+
+          true ->
+            Ecto.Changeset.add_error(changeset, field, msg)
+        end
 
       _ ->
-        Ecto.Changeset.add_error(
-          changeset,
-          :nested_ecto_morph_errors,
-          msg,
-          fields: fields
-        )
+        # "Required property #{missing} was not present."
+        # "Required properties #{Enum.join(missing, ", ")} were not present."
+        cond do
+          msg =~ ~r/Required property/ ->
+            required_field =
+              Regex.named_captures(~r/Required property (?<field>\w+) was not present./, msg)
+              |> Map.get("field")
+              |> String.to_atom()
+
+            Ecto.Changeset.add_error(
+              changeset,
+              :nested_ecto_morph_errors,
+              msg,
+              fields: fields ++ [required_field]
+            )
+
+          msg =~ ~r/Required properties/ ->
+            required_fields =
+              Regex.named_captures(
+                ~r/Required properties (?<fields>[\w|,|\s]*) were not present./,
+                msg
+              )
+              |> Map.get("fields")
+              |> String.split(", ")
+              |> Enum.map(&String.to_atom/1)
+
+            Enum.reduce(required_fields, changeset, fn required_field, cs ->
+              Ecto.Changeset.add_error(
+                cs,
+                :nested_ecto_morph_errors,
+                "Required property #{required_field} was not present.",
+                fields: fields ++ [required_field]
+              )
+            end)
+
+          true ->
+            Ecto.Changeset.add_error(
+              changeset,
+              :nested_ecto_morph_errors,
+              msg,
+              fields: fields
+            )
+        end
     end
   end
 
@@ -105,6 +209,14 @@ defmodule EctoMorph.Schema.Helpers do
     String.split(path, "#/")
     |> Enum.at(-1)
     |> String.split("/")
-    |> Enum.map(&String.to_atom/1)
+    |> Enum.map(fn v ->
+      case Integer.parse(v) do
+        {int, _} ->
+          int
+
+        :error ->
+          String.to_atom(v)
+      end
+    end)
   end
 end
