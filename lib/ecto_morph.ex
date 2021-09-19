@@ -42,15 +42,39 @@ defmodule EctoMorph do
     EctoMorph.FieldTypeResolver.run(type)
   end
 
-  defmacro add_ecto_field(key, schema_property) do
+  # NOOOO
+  # defmacro add_ecto_field_derp(key, schema_property, schema) do
+  #   quote location: :keep do
+  #     IO.inspect(unquote(schema_property), label: "derp/schema_prop")
+  #     case unquote(schema_property) do
+  #       %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
+  #         new_schema_property = get_in(unquote(schema).schema, relative_refs_path)
+  #         IO.inspect(new_schema_property, label: "from derp")
+  #         EctoMorph.add_ecto_field(unquote(key), new_schema_property, unquote(schema))
+
+  #       %{"type" => "object", "properties" => _} ->
+  #         EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property), unquote(schema))
+
+  #       %{"type" => _type} ->
+  #         field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema_property)))
+  #     end
+  #   end
+  # end
+  defmacro handle_ref(key, schema, relative_refs_path) do
+    quote location: :keep do
+      schema_property = get_in(unquote(schema).schema, unquote(relative_refs_path))
+      EctoMorph.add_ecto_field(unquote(key), schema_property, unquote(schema)) # BREAKS EVERYTHING
+    end
+  end
+
+  defmacro add_ecto_field(key, schema_property, schema) do
     quote location: :keep do
       case unquote(schema_property) do
-        %{"$ref" => id} ->
-          # TODO: Find module and embed
-          "TODO"
+        %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
+          EctoMorph.handle_ref(unquote(key), unquote(schema), relative_refs_path) 
 
         %{"type" => "object", "properties" => _} ->
-          EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property))
+          EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property), unquote(schema))
 
         %{"type" => _type} ->
           field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema_property)))
@@ -58,7 +82,7 @@ defmodule EctoMorph do
     end
   end
 
-  defmacro embed_one_inline_schema(key, schema_property) do
+  defmacro embed_one_inline_schema(key, schema_property, schema) do
     quote location: :keep do
       EctoMorph.define_current_schema_property(unquote(schema_property))
 
@@ -66,7 +90,7 @@ defmodule EctoMorph do
         current_schema_property = EctoMorph.current_schema_property()
 
         Enum.each(current_schema_property["properties"], fn {inner_key, inner_schema_property} ->
-          EctoMorph.add_ecto_field(inner_key, inner_schema_property)
+          EctoMorph.add_ecto_field(inner_key, inner_schema_property, unquote(schema))
         end)
       end
 
@@ -102,7 +126,7 @@ defmodule EctoMorph do
         @primary_key nil
         embedded_schema do
           Enum.each(@properties, fn {key, schema_property} ->
-            EctoMorph.add_ecto_field(key, schema_property)
+            EctoMorph.add_ecto_field(key, schema_property, @schema)
           end)
         end
 
