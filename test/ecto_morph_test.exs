@@ -144,7 +144,7 @@ defmodule EctoMorphTest do
         }
       }
 
-      changeset = EctoMorph.schemaless_changeset(data, schema, params)
+      changeset = EctoMorph.schemaless_changeset(data, params, schema)
 
       assert changeset.valid?
 
@@ -169,7 +169,7 @@ defmodule EctoMorphTest do
         }
       }
 
-      changeset = EctoMorph.schemaless_changeset(data, schema, params)
+      changeset = EctoMorph.schemaless_changeset(data, params, schema)
 
       refute changeset.valid?
 

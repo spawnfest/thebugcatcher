@@ -171,41 +171,64 @@ defmodule EctoMorph do
     end
   end
 
-  def schemaless_changeset(data, schema, attrs) do
-    properties = schema.schema["properties"]
+  def schemaless_changeset(data, attrs, schema, node \\ nil) do
+    properties = node["properties"] || schema.schema["properties"]
 
     types = Enum.reduce(properties, %{}, fn {key, schema_property}, acc ->
       type = type_for_schema_property(schema_property)
       Map.put(acc, String.to_atom(key), type)
     end)
 
-    types = types
-      |> Map.put(:child, {:embed,
-         %Ecto.Embedded{
-           cardinality: :one,
-           field: :child,
-           # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
-           on_cast: fn struct, params -> 1 end,
-           on_replace: :raise,
-           ordered: true,
-           owner: 2,
-           related: __MODULE__.Nested,
-           unique: true
-         }}
-      )
+    # types = types
+    #   |> Map.put(:child, {:embed,
+    #      %Ecto.Embedded{
+    #        cardinality: :one,
+    #        field: nil,
+    #        # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
+    #        on_cast: fn struct, params -> 1 end,
+    #        on_replace: :raise,
+    #        ordered: true,
+    #        owner: 2,
+    #        related: __MODULE__.Nested,
+    #        unique: true
+    #      }}
+    #   )
 
-    child_properties = %{
-      "type" => "object",
-      "properties" => %{
-        "name" => %{
-          "type" => "string"
-        }
-      }
-    } |> ExJsonSchema.Schema.resolve()
+    {embed_keys, cast_keys, } = Enum.split_with(types, fn
+      {_key, {:embed, _}} ->
+        true
+      _ ->
+        false
+     end)
+
+    # Convert from keyword list to map
+    cast_keys = Enum.into(cast_keys, %{})
+    embed_keys = Enum.into(embed_keys, %{})
 
     changeset = {data, types}
-      |> Ecto.Changeset.cast(attrs, Map.keys(types) -- [:child])
-      |> Ecto.Changeset.cast_embed(:child, with: fn struct, attrs -> schemaless_changeset(struct, child_properties, attrs) end)
+      |> Ecto.Changeset.cast(attrs, Map.keys(cast_keys))
+
+    changeset = Enum.reduce(embed_keys, changeset, fn {key, _}, changeset ->
+      child_properties = Map.get(properties, Atom.to_string(key))
+
+      Ecto.Changeset.cast_embed(changeset, key, with: fn struct, attrs -> schemaless_changeset(struct, attrs, schema, child_properties) end)
+    end)
+
+    if changeset.valid? do
+      # case ExJsonSchema.Validator.validate(@schema, changeset.params) do
+      #   :ok ->
+      #     changeset
+      #
+      #   {:error, errors} ->
+      #     Enum.reduce(errors, changeset, fn {msg, path}, changeset ->
+      #       field = field_from_path(path)
+      #       add_error(changeset, :"#{field}", msg)
+      #     end)
+      # end
+      changeset
+    else
+      changeset
+    end
 
     # child = Ecto.Changeset.get_field(changeset, :child)
     #
@@ -230,6 +253,6 @@ defmodule EctoMorph do
     #      }}
     #   )
 
-    %{changeset | types: types}
+    # %{changeset | types: types}
   end
 end
