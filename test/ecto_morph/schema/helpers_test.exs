@@ -114,13 +114,11 @@ defmodule EctoMorph.Schema.HelpersTest do
           "Child Error",
           fields: [:child, :child_name]
         )
-
-      # TODO
-      # |> Ecto.Changeset.add_error(
-      #   :nested_ecto_morph_errors,
-      #   "Grand Child Error",
-      #   fields: [:child, :grand_children, :grand_child_name]
-      # )
+        |> Ecto.Changeset.add_error(
+          :nested_ecto_morph_errors,
+          "Grand Child Error",
+          fields: [:child, :grand_children, :grand_child_name]
+        )
 
       refute changeset.valid?
 
@@ -132,6 +130,9 @@ defmodule EctoMorph.Schema.HelpersTest do
       assert returned_changeset.changes.child.errors == [
                child_name: {"Child Error", []}
              ]
+
+      grand_children_changesets = returned_changeset.changes.child.changes.grand_children
+      assert grand_children_changesets == []
     end
   end
 end

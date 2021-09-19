@@ -25,8 +25,52 @@ defmodule EctoMorph.Schema.Definer do
             unquote(schema)
           )
 
+        %{"type" => "array", "items" => internal_type} ->
+          embed_many_inline_schema(
+            unquote(key),
+            internal_type,
+            unquote(schema)
+          )
+
         %{"type" => _type} ->
           field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema_property)))
+      end
+    end
+  end
+
+  defmacro embed_many_inline_schema(key, internal_type, schema) do
+    quote location: :keep do
+      case unquote(internal_type) do
+        # %{"$ref" => [:root | relative_refs_path]} ->
+        #   schema_property = get_in(unquote(schema).schema, relative_refs_path)
+        #
+        #   case schema_property do
+        #     %{"type" => "object", "properties" => _} ->
+        #       embed_one_inline_schema(unquote(key), schema_property, unquote(schema))
+        #
+        #     %{"type" => _type} ->
+        #       field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(schema_property))
+        #   end
+        #
+        # %{"type" => "object", "properties" => _} ->
+        #   embed_one_inline_schema(
+        #     unquote(key),
+        #     unquote(schema_property),
+        #     unquote(schema)
+        #   )
+
+        %{"type" => _type} ->
+          define_current_schema_property(unquote(internal_type))
+
+          embeds_many :"#{unquote(key)}", :"#{Macro.camelize(unquote(key))}" do
+            current_schema_property = current_schema_property()
+
+            Enum.each(current_schema_property["properties"], fn {inner_key, inner_schema_property} ->
+              add_ecto_field(inner_key, inner_schema_property, unquote(schema))
+            end)
+          end
+
+          undefine_current_schema_property()
       end
     end
   end

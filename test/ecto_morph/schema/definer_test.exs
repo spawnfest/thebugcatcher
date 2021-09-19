@@ -32,6 +32,23 @@ defmodule EctoMorph.Schema.DefinerTest do
             },
             "car" => %{
               "$ref" => "#/$defs/car"
+            },
+            # "cars" => %{
+            #   "type" => "array",
+            #   "items" => %{
+            #     "$ref" => "#/$defs/car"
+            #   }
+            # },
+            "bars" => %{
+              "type" => "array",
+              "items" => %{
+                "type" => "object",
+                "properties" => %{
+                  "name" => %{
+                    "type" => "string"
+                  }
+                }
+              }
             }
           },
           "$defs" => %{
@@ -44,7 +61,8 @@ defmodule EctoMorph.Schema.DefinerTest do
                 "color" => %{
                   "type" => "string"
                 }
-              }
+              },
+              "required" => ["color"]
             }
           }
         }
@@ -67,7 +85,11 @@ defmodule EctoMorph.Schema.DefinerTest do
         "name" => "Adi",
         "car" => %{
           "color" => "blue"
-        }
+        },
+        "bars" => [
+          %{"name" => "barname"},
+          %{"name" => "wildrover"}
+        ]
       }
 
       # Needs to be dynamic to avoid warnings
@@ -91,7 +113,19 @@ defmodule EctoMorph.Schema.DefinerTest do
                  __struct__: Foo.Car,
                  color: "blue",
                  id: nil
-               }
+               },
+               bars: [
+                 %{
+                   __struct__: Foo.Bars,
+                   id: nil,
+                   name: "barname"
+                 },
+                 %{
+                   __struct__: Foo.Bars,
+                   id: nil,
+                   name: "wildrover"
+                 }
+               ]
              }
     end
   end
