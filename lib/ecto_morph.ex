@@ -341,7 +341,7 @@ defmodule EctoMorph do
 
   def schemaless_changeset(data, attrs, schema, node \\ nil) do
     properties =
-      if is_nil?(node) do
+      if is_nil(node) do
         schema.schema["properties"]
       else
         node["properties"]
