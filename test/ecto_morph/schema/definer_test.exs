@@ -18,6 +18,9 @@ defmodule EctoMorph.Schema.DefinerTest do
               "type" => "string",
               "format" => "date-time"
             },
+            "likes_to_eat_potato" => %{
+              "type" => "boolean"
+            },
             "favorite_number" => %{
               "type" => "number"
             },
@@ -106,6 +109,7 @@ defmodule EctoMorph.Schema.DefinerTest do
       foo_params = %{
         "title" => "bar",
         "occurred_at" => occurred_at |> DateTime.to_iso8601(),
+        "likes_to_eat_potato" => true,
         "favorite_number" => 5.0,
         "child" => %{
           "name" => "bob"
@@ -145,6 +149,7 @@ defmodule EctoMorph.Schema.DefinerTest do
                __struct__: Foo,
                title: "bar",
                occurred_at: occurred_at,
+               likes_to_eat_potato: true,
                favorite_number: Decimal.new("5.0"),
                child: %{
                  __struct__: Foo.Child,
@@ -187,6 +192,22 @@ defmodule EctoMorph.Schema.DefinerTest do
                  color: "yellow",
                  size: 1
                }
+             }
+    end
+
+    test "adds errors for invalid data boolean field assignment" do
+      invalid_params = %{
+        "likes_to_eat_potato" => "no"
+      }
+
+      # Needs to be dynamic to avoid warnings
+      changeset = apply(Foo, :changeset, [%{__struct__: Foo}, invalid_params])
+
+      refute changeset.valid?
+
+      # error assertions
+      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+               likes_to_eat_potato: [{"is invalid", [type: :boolean, validation: :cast]}]
              }
     end
 

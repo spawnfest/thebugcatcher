@@ -14,6 +14,7 @@ defmodule EctoMorph.FieldTypeResolver do
 
   def run(type, format \\ nil)
 
+  def run("boolean", _), do: :boolean
   def run("integer", _), do: :integer
   def run("number", _), do: :decimal
   def run("string", "date-time"), do: :utc_datetime

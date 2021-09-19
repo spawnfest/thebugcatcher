@@ -4,6 +4,10 @@ defmodule EctoMorph.FieldTypeResolverTest do
   alias EctoMorph.FieldTypeResolver
 
   describe "run/1" do
+    test "returns :boolean when given type \"boolean\"" do
+      assert :boolean == FieldTypeResolver.run("boolean")
+    end
+
     test "returns :decimal when given type \"number\"" do
       assert :decimal == FieldTypeResolver.run("number")
     end
