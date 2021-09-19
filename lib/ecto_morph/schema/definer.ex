@@ -59,20 +59,12 @@ defmodule EctoMorph.Schema.Definer do
 
               undefine_current_schema_property()
 
-            # TEST ME
             %{"type" => _type} ->
               field(
                 :"#{unquote(key)}",
                 {:array, EctoMorph.type_for_schema_property(schema_property)}
               )
           end
-
-        # %{"type" => "object", "properties" => _} ->
-        #   embed_one_inline_schema(
-        #     unquote(key),
-        #     unquote(schema_property),
-        #     unquote(schema)
-        #   )
 
         %{"type" => _type, "properties" => _} ->
           define_current_schema_property(unquote(internal_type))
