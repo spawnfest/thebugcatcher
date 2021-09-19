@@ -34,13 +34,24 @@ defmodule EctoMorph do
     end
   end
 
-  def type_for_schema_property(%{"type" => type, "format" => format}) do
+  def type_for_schema_property(_schema, %{"type" => type, "format" => format}) do
     EctoMorph.FieldTypeResolver.run(type, format)
   end
 
-  def type_for_schema_property(%{"type" => type}) do
+  def type_for_schema_property(_schema, %{"type" => type}) do
     EctoMorph.FieldTypeResolver.run(type)
   end
+
+  def type_for_schema_property(schema, %{"$ref" => [:root | relative_refs_path]}) do
+    object = get_in(schema.schema, relative_refs_path)
+    type_for_schema_property(schema, object)
+  end
+
+
+     # %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
+     #         new_schema_property = get_in(unquote(schema).schema, relative_refs_path)
+     #         IO.inspect(new_schema_property, label: "from derp")
+     #         EctoMorph.add_ecto_field(unquote(key), new_schema_property, unquote(schema))
 
   # NOOOO
   # defmacro add_ecto_field_derp(key, schema_property, schema) do
@@ -71,13 +82,13 @@ defmodule EctoMorph do
     quote location: :keep do
       case unquote(schema_property) do
         %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
-          EctoMorph.handle_ref(unquote(key), unquote(schema), relative_refs_path) 
+          EctoMorph.handle_ref(unquote(key), unquote(schema), relative_refs_path)
 
         %{"type" => "object", "properties" => _} ->
           EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property), unquote(schema))
 
         %{"type" => _type} ->
-          field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema_property)))
+          field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema), unquote(schema_property)))
       end
     end
   end
@@ -319,7 +330,7 @@ defmodule EctoMorph do
     properties = node["properties"] || schema.schema["properties"]
 
     types = Enum.reduce(properties, %{}, fn {key, schema_property}, acc ->
-      type = type_for_schema_property(schema_property)
+      type = type_for_schema_property(schema, schema_property)
       Map.put(acc, String.to_atom(key), type)
     end)
 

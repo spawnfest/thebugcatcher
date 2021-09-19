@@ -123,7 +123,15 @@ defmodule EctoMorphTest do
                 "type" => "string"
               }
             }
-          }
+          },
+          "name" => %{
+            "$ref" => "#/$defs/name"
+          },
+        },
+        "$defs" => %{
+          "name" => %{
+            "type" => "string"
+          },
         }
       }
       |> ExJsonSchema.Schema.resolve()
@@ -141,7 +149,8 @@ defmodule EctoMorphTest do
         occurred_at: occurred_at |> DateTime.to_iso8601(),
         child: %{
           name: "bob"
-        }
+        },
+        name: "Adi"
       }
 
       changeset = EctoMorph.schemaless_changeset(data, params, schema)
@@ -155,7 +164,8 @@ defmodule EctoMorphTest do
         occurred_at: occurred_at,
         child: %{
           name: "bob"
-        }
+        },
+        name: "Adi"
       }
     end
 
