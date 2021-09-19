@@ -3,83 +3,82 @@ defmodule EctoMorph.Schema.DefinerTest do
 
   alias EctoMorph.Schema.Definer
 
-  describe "define_ecto_schema_from_json/2" do
-    setup do
-      require EctoMorph.Schema.Definer
+  setup_all do
+    require EctoMorph.Schema.Definer
 
-      schema =
-        %{
-          "type" => "object",
-          "properties" => %{
-            "title" => %{
-              "type" => "string"
+    schema =
+      %{
+        "type" => "object",
+        "properties" => %{
+          "title" => %{
+            "type" => "string"
+          },
+          "occurred_at" => %{
+            "type" => "string",
+            "format" => "date-time"
+          },
+          "likes_to_eat_potato" => %{
+            "type" => "boolean"
+          },
+          "favorite_number" => %{
+            "type" => "number"
+          },
+          "child" => %{
+            "type" => "object",
+            "properties" => %{
+              "name" => %{
+                "type" => "string"
+              }
             },
-            "occurred_at" => %{
-              "type" => "string",
-              "format" => "date-time"
-            },
-            "likes_to_eat_potato" => %{
-              "type" => "boolean"
-            },
-            "favorite_number" => %{
-              "type" => "number"
-            },
-            "child" => %{
+            "required" => ["name"]
+          },
+          "name" => %{
+              "$ref" => "#/$defs/name"
+          },
+          "names" => %{
+            "type" => "array",
+            "items" => %{
+                "$ref" => "#/$defs/name"
+            }
+          },
+          "car" => %{
+              "$ref" => "#/$defs/car"
+          },
+          "cars" => %{
+            "type" => "array",
+            "items" => %{
+                "$ref" => "#/$defs/car"
+            }
+          },
+          "bars" => %{
+            "type" => "array",
+            "items" => %{
               "type" => "object",
               "properties" => %{
                 "name" => %{
                   "type" => "string"
                 }
-              },
-              "required" => ["name"]
-            },
-            "name" => %{
-              "$ref" => "#/$defs/name"
-            },
-            "names" => %{
-              "type" => "array",
-              "items" => %{
-                "$ref" => "#/$defs/name"
               }
-            },
-            "car" => %{
-              "$ref" => "#/$defs/car"
-            },
-            "cars" => %{
-              "type" => "array",
-              "items" => %{
-                "$ref" => "#/$defs/car"
-              }
-            },
-            "bars" => %{
-              "type" => "array",
-              "items" => %{
-                "type" => "object",
-                "properties" => %{
-                  "name" => %{
-                    "type" => "string"
-                  }
-                }
-              }
-            },
-            "tags" => %{
-              "type" => "array",
-              "items" => %{
-                "type" => "string"
-              }
-            },
-            "truck" => %{
-              "type" => "object",
-              "properties" => %{
-                "color" => %{
-                  "type" => "string"
-                },
-                "size" => %{
-                  "type" => "integer"
-                }
-              },
-              "required" => ["color", "size"]
             }
+          },
+          "tags" => %{
+            "type" => "array",
+            "items" => %{
+              "type" => "string"
+            }
+          },
+          "truck" => %{
+            "type" => "object",
+            "properties" => %{
+              "color" => %{
+                "type" => "string"
+              },
+              "size" => %{
+                "type" => "integer"
+              }
+            },
+            "required" => ["color", "size"]
+          }
           },
           "$defs" => %{
             "name" => %{
@@ -95,14 +94,15 @@ defmodule EctoMorph.Schema.DefinerTest do
               "required" => ["color"]
             }
           }
-        }
-        |> ExJsonSchema.Schema.resolve()
+          }
+          |> ExJsonSchema.Schema.resolve()
 
-      {:module, Foo, _, _} = Definer.define_ecto_schema_from_json(Foo, schema)
+    {:module, Foo, _, _} = Definer.define_ecto_schema_from_json(Foo, schema)
 
-      :ok
-    end
+    :ok
+  end
 
+  describe "define_ecto_schema_from_json/2" do
     test "casts valid data" do
       occurred_at = DateTime.utc_now() |> DateTime.truncate(:second)
 
