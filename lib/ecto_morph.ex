@@ -7,16 +7,6 @@ defmodule EctoMorph do
   def validate(_, _) do
   end
 
-  defmodule Config do
-    @app_name :ecto_morph
-    @default_json_schemas_path "priv/ecto_morph"
-
-    def json_schemas_path() do
-      @app_name
-      |> Application.get_env(:json_schemas_path, @default_json_schemas_path)
-    end
-  end
-
   def type_for_schema_property(%{"type" => type, "format" => format}) do
     EctoMorph.FieldTypeResolver.run(type, format)
   end
