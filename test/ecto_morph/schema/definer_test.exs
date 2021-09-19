@@ -61,6 +61,18 @@ defmodule EctoMorph.Schema.DefinerTest do
               "items" => %{
                 "type" => "string"
               }
+            },
+            "truck" => %{
+              "type" => "object",
+              "properties" => %{
+                "color" => %{
+                  "type" => "string"
+                },
+                "size" => %{
+                  "type" => "integer"
+                }
+              },
+              "required" => ["color", "size"]
             }
           },
           "$defs" => %{
@@ -111,7 +123,11 @@ defmodule EctoMorph.Schema.DefinerTest do
         "tags" => [
           "cool",
           "sometimes"
-        ]
+        ],
+        "truck" => %{
+          "color" => "yellow",
+          "size" => 1
+        }
       }
 
       # Needs to be dynamic to avoid warnings
@@ -159,7 +175,13 @@ defmodule EctoMorph.Schema.DefinerTest do
                tags: [
                  "cool",
                  "sometimes"
-               ]
+               ],
+               truck: %{
+                 __struct__: Foo.Truck,
+                 id: nil,
+                 color: "yellow",
+                 size: 1
+               }
              }
     end
 
@@ -215,12 +237,34 @@ defmodule EctoMorph.Schema.DefinerTest do
                  %{},
                  %{},
                  %{
-                   # would prefer that this key were `color:`
-                   cars: [
+                   color: [
                      {"Required property color was not present.", []}
                    ]
                  }
                ]
+             }
+    end
+
+    test "adds errors for mulitple required fields" do
+      invalid_params = %{
+        "truck" => %{}
+      }
+
+      # Needs to be dynamic to avoid warnings
+      changeset = apply(Foo, :changeset, [%{__struct__: Foo}, invalid_params])
+
+      refute changeset.valid?
+
+      # error assertions
+      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+               truck: %{
+                 color: [
+                   {"Required property color was not present.", []}
+                 ],
+                 size: [
+                   {"Required property size was not present.", []}
+                 ]
+               }
              }
     end
   end

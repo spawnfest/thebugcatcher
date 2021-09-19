@@ -121,15 +121,61 @@ defmodule EctoMorph.Schema.Helpers do
 
     case fields do
       [field] ->
-        Ecto.Changeset.add_error(changeset, field, msg)
+        cond do
+          msg =~ ~r/Required property/ ->
+            raise "TODO"
+
+          msg =~ ~r/Required properties/ ->
+            raise "TODO"
+
+          true ->
+            Ecto.Changeset.add_error(changeset, field, msg)
+        end
 
       _ ->
-        Ecto.Changeset.add_error(
-          changeset,
-          :nested_ecto_morph_errors,
-          msg,
-          fields: fields
-        )
+        # "Required property #{missing} was not present."
+        # "Required properties #{Enum.join(missing, ", ")} were not present."
+        cond do
+          msg =~ ~r/Required property/ ->
+            required_field =
+              Regex.named_captures(~r/Required property (?<field>\w+) was not present./, msg)
+              |> Map.get("field")
+              |> String.to_atom()
+
+            Ecto.Changeset.add_error(
+              changeset,
+              :nested_ecto_morph_errors,
+              msg,
+              fields: fields ++ [required_field]
+            )
+
+          msg =~ ~r/Required properties/ ->
+            required_fields =
+              Regex.named_captures(
+                ~r/Required properties (?<fields>[\w|,|\s]*) were not present./,
+                msg
+              )
+              |> Map.get("fields")
+              |> String.split(", ")
+              |> Enum.map(&String.to_atom/1)
+
+            Enum.reduce(required_fields, changeset, fn cs, required_field ->
+              Ecto.Changeset.add_error(
+                changeset,
+                :nested_ecto_morph_errors,
+                "Required property #{required_field} was not present.",
+                fields: fields ++ [required_field]
+              )
+            end)
+
+          true ->
+            Ecto.Changeset.add_error(
+              changeset,
+              :nested_ecto_morph_errors,
+              msg,
+              fields: fields
+            )
+        end
     end
   end
 
