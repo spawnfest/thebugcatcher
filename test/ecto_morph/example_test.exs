@@ -21,7 +21,8 @@ defmodule EctoMorph.ExampleTest do
               "name" => %{
                 "type" => "string"
               }
-            }
+            },
+            "required" => ["name"]
           }
         }
       }
@@ -96,5 +97,26 @@ defmodule EctoMorph.ExampleTest do
                  ]
                }
              }
+  end
+
+  test "adds errors for invalid data (ex_json_schema)" do
+    example = %EctoMorph.Example{}
+
+    occurred_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    changeset =
+      EctoMorph.Example.changeset(example, %{
+        "foo" => %{
+          "foo" => "bar",
+          "occurred_at" => occurred_at |> DateTime.to_iso8601(),
+          "child" => %{}
+        }
+      })
+
+    refute changeset.valid?
+
+    assert Ecto.Changeset.traverse_errors(changeset, & &1) ==
+      %{foo: %{child: [{"Required property name was not present.", []}]}}
+
   end
 end
