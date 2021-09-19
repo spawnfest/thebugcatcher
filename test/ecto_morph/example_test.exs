@@ -4,6 +4,26 @@ defmodule EctoMorph.ExampleTest do
   setup do
     require EctoMorph
 
+    # TODO?
+    # customer_json_schema = """
+    #   {
+    #     "$id": "https://example.com/schemas/customer",
+    #     "type": "object",
+    #     "properties": {
+    #       "first_name": { "$ref": "#/$defs/name" },
+    #       "last_name": { "$ref": "#/$defs/name" },
+    #       "shipping_address": { "$ref": "/schemas/address" },
+    #       "billing_address": { "$ref": "/schemas/address" }
+    #     },
+    #     "required": ["first_name", "last_name", "shipping_address", "billing_address"],
+    #     "$defs": {
+    #       "name": { "type": "string" }
+    #     }
+    #   }
+    # """
+    # |> Jason.decode!()
+    # |> ExJsonSchema.Schema.resolve()
+
     schema =
       %{
         "type" => "object",
@@ -23,11 +43,23 @@ defmodule EctoMorph.ExampleTest do
               }
             },
             "required" => ["name"]
-          }
+          },
+          "name" => %{
+            "$ref" => "#/$defs/name"
+          },
+        },
+        "$defs" => %{
+          "name" => %{
+            "type" => "string"
+          },
         }
       }
       |> ExJsonSchema.Schema.resolve()
 
+    require IEx
+    IEx.pry()
+
+    IO.inspect(schema, label: "AWESOME")
     _return_value = EctoMorph.define_ecto_schema_from_json(Foo, schema)
 
     :ok
@@ -45,7 +77,8 @@ defmodule EctoMorph.ExampleTest do
           "occurred_at" => occurred_at |> DateTime.to_iso8601(),
           "child" => %{
             "name" => "bob"
-          }
+          },
+          "name" => "Adi"
         }
       })
 
@@ -62,7 +95,8 @@ defmodule EctoMorph.ExampleTest do
                  __struct__: Foo.Child,
                  name: "bob",
                  id: nil
-               }
+               },
+               name: "Adi"
              },
              id: nil
            }

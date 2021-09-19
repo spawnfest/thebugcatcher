@@ -21,6 +21,7 @@ defmodule EctoMorph.MixProject do
     [
       {:ex_json_schema, "~> 0.9.0"},
       {:ecto, "~> 3.0"},
+      {:httpoison, "~> 1.8"},
       {:jason, "~> 1.2"}
     ]
   end
