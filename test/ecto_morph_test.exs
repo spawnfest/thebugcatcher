@@ -1,9 +1,6 @@
 defmodule EctoMorphTest do
   use ExUnit.Case, async: false
 
-  describe "validate/2" do
-  end
-
   describe "load_json_schemas!/0" do
     setup tags do
       new_path = Map.fetch!(tags, :path)
