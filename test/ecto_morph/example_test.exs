@@ -46,11 +46,22 @@ defmodule EctoMorph.ExampleTest do
           },
           "name" => %{
             "$ref" => "#/$defs/name"
+          },
+          "car" => %{
+            "$ref" => "#/$defs/car"
           }
         },
         "$defs" => %{
           "name" => %{
             "type" => "string"
+          },
+          "car" => %{
+            "type" => "object",
+            "properties" => %{
+              "color" => %{
+                "type" => "string"
+              }
+            }
           }
         }
       }
@@ -78,7 +89,10 @@ defmodule EctoMorph.ExampleTest do
           "child" => %{
             "name" => "bob"
           },
-          "name" => "Adi"
+          "name" => "Adi",
+          "car" => %{
+            "color" => "blue"
+          }
         }
       })
 
@@ -96,7 +110,12 @@ defmodule EctoMorph.ExampleTest do
                  name: "bob",
                  id: nil
                },
-               name: "Adi"
+               name: "Adi",
+               car: %{
+                 __struct__: Foo.Car,
+                 color: "blue",
+                 id: nil
+               }
              },
              id: nil
            }
