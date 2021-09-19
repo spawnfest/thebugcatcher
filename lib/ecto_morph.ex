@@ -179,22 +179,7 @@ defmodule EctoMorph do
       Map.put(acc, String.to_atom(key), type)
     end)
 
-    # types = types
-    #   |> Map.put(:child, {:embed,
-    #      %Ecto.Embedded{
-    #        cardinality: :one,
-    #        field: nil,
-    #        # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
-    #        on_cast: fn struct, params -> 1 end,
-    #        on_replace: :raise,
-    #        ordered: true,
-    #        owner: 2,
-    #        related: __MODULE__.Nested,
-    #        unique: true
-    #      }}
-    #   )
-
-    {embed_keys, cast_keys, } = Enum.split_with(types, fn
+    {embed_keys, cast_keys} = Enum.split_with(types, fn
       {_key, {:embed, _}} ->
         true
       _ ->

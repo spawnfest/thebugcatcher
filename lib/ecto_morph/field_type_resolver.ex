@@ -31,7 +31,7 @@ defmodule EctoMorph.FieldTypeResolver do
      }
    }
 
-  def run("object", _), do: :map
+  # def run("object", _), do: :map
 
   def run(type, format), do: raise_error_for_unsupported_type(type, format)
 
