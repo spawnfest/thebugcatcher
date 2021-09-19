@@ -116,7 +116,6 @@ defmodule EctoMorph.ExampleTest do
     refute changeset.valid?
 
     assert Ecto.Changeset.traverse_errors(changeset, & &1) ==
-      %{foo: %{child: [{"Required property name was not present.", []}]}}
-
+             %{foo: %{child: [{"Required property name was not present.", []}]}}
   end
 end
