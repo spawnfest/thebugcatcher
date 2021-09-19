@@ -50,7 +50,6 @@ defmodule EctoMorph do
           "TODO"
 
         %{"type" => "object", "properties" => _} ->
-          IO.inspect(unquote(schema_property), label: "sp-53")
           EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property))
 
         %{"type" => _type} ->
@@ -110,8 +109,8 @@ defmodule EctoMorph do
         def changeset(%__MODULE__{} = struct, params) do
           struct
           |> cast(params, [])
-          |> validate()
-          |> cast_fields_if_valid()
+          |> cast_fields()
+          |> maybe_validate_json_schema()
           |> maybe_apply_nested_ecto_morph_errors()
         end
 
@@ -120,6 +119,10 @@ defmodule EctoMorph do
         end
 
         defp cast_fields_if_valid(changeset), do: changeset
+
+        defp cast_fields(changeset) do
+          cast_fields(changeset, __MODULE__, changeset.params)
+        end
 
         defp cast_fields(changeset_or_struct, schema_mod, params) do
           embeds = schema_mod.__schema__(:embeds)
@@ -146,9 +149,6 @@ defmodule EctoMorph do
         def maybe_apply_nested_ecto_morph_errors(changeset) do
           errors = Keyword.get_values(changeset.errors, :nested_ecto_morph_errors)
 
-          IO.inspect(changeset.errors, label: "error")
-          IO.inspect(errors, label: "maybe")
-
           if length(errors) >= 1 do
             Enum.reduce(errors, changeset, fn {msg, keys}, changeset ->
               fields = Keyword.fetch!(keys, :fields)
@@ -159,22 +159,25 @@ defmodule EctoMorph do
           end
         end
 
-        def apply_field_path_error(changeset, msg, fields) do
-          IO.inspect(changeset, label: "changeset")
-          IO.inspect(msg, label: "msg")
-          IO.inspect(fields, label: "fields")
-
-          path_fields = Enum.slice(fields, 0..-2)
-          field = Enum.at(fields, -1)
-
-          IO.inspect(path_fields, label: "path_fields")
-          IO.inspect(field, label: "field")
-
-          get_in(changeset, fields)
-          # Ecto.Changeset.get_change(changeset, field)
+        def apply_field_path_error(changeset, msg, [field]) do
+          add_error(changeset, field, msg)
         end
 
-        defp validate(changeset) do
+        def apply_field_path_error(changeset, msg, [field | tail]) do
+          field_changeset = get_change(changeset, field)
+
+          put_change(
+            changeset,
+            field,
+            apply_field_path_error(field_changeset, msg, tail)
+          )
+        end
+
+        defp maybe_validate_json_schema(%{valid?: false} = changeset) do
+          changeset
+        end
+
+        defp maybe_validate_json_schema(%{valid?: true} = changeset) do
           case ExJsonSchema.Validator.validate(@schema, changeset.params) do
             :ok ->
               changeset
@@ -188,14 +191,17 @@ defmodule EctoMorph do
                   add_error(changeset, field, msg)
                 else
                   changeset
-                  |> add_error(:nested_ecto_morph_errors, msg, [fields: fields])
+                  |> add_error(:nested_ecto_morph_errors, msg, fields: fields)
                 end
               end)
           end
         end
 
         defp field_from_path(path) do
-          String.split(path, "#/") |> Enum.at(-1) |> String.split("/") |> Enum.map(&String.to_atom/1)
+          String.split(path, "#/")
+          |> Enum.at(-1)
+          |> String.split("/")
+          |> Enum.map(&String.to_atom/1)
         end
       end
     end

@@ -77,12 +77,24 @@ defmodule EctoMorph.ExampleTest do
 
     refute changeset.valid?
 
-    assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-             foo: %{
-               foo: [{"Type mismatch. Expected String but got Integer.", []}],
-               occurred_at: [{"Expected to be a valid ISO 8601 date-time.", []}],
-               child: %{name: [{"Type mismatch. Expected String but got Integer.", []}]}
+    assert Ecto.Changeset.traverse_errors(changeset, & &1) ==
+             %{
+               foo: %{
+                 child: %{
+                   name: [
+                     {"is invalid", [{:type, :string}, {:validation, :cast}]}
+                   ]
+                 },
+                 foo: [
+                   {"is invalid", [{:type, :string}, {:validation, :cast}]}
+                 ],
+                 occurred_at: [
+                   {
+                     "is invalid",
+                     [{:type, :utc_datetime}, {:validation, :cast}]
+                   }
+                 ]
+               }
              }
-           }
   end
 end
