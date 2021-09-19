@@ -1,9 +1,10 @@
-# TEMP-Name
+<img src="logo/logo.png" href="#" width="270" height="190">
 
-- Create an Ecto Schema that has a map as json with cast
-- Have a json input generate Ecto.Changeset errors based on a json schema
+# EctoMorph
 
-### Use case
+Morph between Ecto & JSON Schemas!
+
+## Use Cases
 
 #### Example 1: Injesting JSON data & Coercing to Elixir data
 
