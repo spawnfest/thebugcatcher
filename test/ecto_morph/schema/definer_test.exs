@@ -33,21 +33,21 @@ defmodule EctoMorph.Schema.DefinerTest do
             "required" => ["name"]
           },
           "name" => %{
-              "$ref" => "#/$defs/name"
+            "$ref" => "#/$defs/name"
           },
           "names" => %{
             "type" => "array",
             "items" => %{
-                "$ref" => "#/$defs/name"
+              "$ref" => "#/$defs/name"
             }
           },
           "car" => %{
-              "$ref" => "#/$defs/car"
+            "$ref" => "#/$defs/car"
           },
           "cars" => %{
             "type" => "array",
             "items" => %{
-                "$ref" => "#/$defs/car"
+              "$ref" => "#/$defs/car"
             }
           },
           "bars" => %{
@@ -79,23 +79,23 @@ defmodule EctoMorph.Schema.DefinerTest do
             },
             "required" => ["color", "size"]
           }
+        },
+        "$defs" => %{
+          "name" => %{
+            "type" => "string"
           },
-          "$defs" => %{
-            "name" => %{
-              "type" => "string"
+          "car" => %{
+            "type" => "object",
+            "properties" => %{
+              "color" => %{
+                "type" => "string"
+              }
             },
-            "car" => %{
-              "type" => "object",
-              "properties" => %{
-                "color" => %{
-                  "type" => "string"
-                }
-              },
-              "required" => ["color"]
-            }
+            "required" => ["color"]
           }
-          }
-          |> ExJsonSchema.Schema.resolve()
+        }
+      }
+      |> ExJsonSchema.Schema.resolve()
 
     {:module, Foo, _, _} = Definer.define_ecto_schema_from_json(Foo, schema)
 
@@ -242,7 +242,6 @@ defmodule EctoMorph.Schema.DefinerTest do
                favorite_number: [{"is invalid", [type: :decimal, validation: :cast]}]
              }
     end
-
 
     test "adds errors for invalid data array field assignment" do
       invalid_params = %{

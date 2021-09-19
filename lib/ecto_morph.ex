@@ -4,18 +4,7 @@ defmodule EctoMorph do
   """
   alias EctoMorph.{Config, FileUtils}
 
-  def validate(_, _) do
-  end
-
-  def type_for_schema_property(%{"type" => type, "format" => format}) do
-    EctoMorph.FieldTypeResolver.run(type, format)
-  end
-
-  def type_for_schema_property(%{"type" => type}) do
-    EctoMorph.FieldTypeResolver.run(type)
-  end
-
-  def load_json_schemas!() do
+  def load_json_schemas! do
     Config.json_schemas_path()
     |> FileUtils.ls_r!()
     |> Enum.each(fn json_schema_path ->
@@ -54,6 +43,14 @@ defmodule EctoMorph do
 
   defp generate_module_name do
     "Elixir.EctoMorph.Schema.ID" <> (Ecto.UUID.generate() |> Base.encode64())
+  end
+
+  def type_for_schema_property(%{"type" => type, "format" => format}) do
+    EctoMorph.FieldTypeResolver.run(type, format)
+  end
+
+  def type_for_schema_property(%{"type" => type}) do
+    EctoMorph.FieldTypeResolver.run(type)
   end
 
   def start_link, do: Agent.start_link(fn -> [] end, name: __MODULE__)

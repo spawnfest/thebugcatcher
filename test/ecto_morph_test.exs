@@ -46,7 +46,7 @@ defmodule EctoMorphTest do
 
       datetime_schema = EctoMorph.get_module_for_id("datetime_schema")
       datetime_schema = :"#{datetime_schema}"
-      assert datetime_schema.__schema__(:type, :occured_at) == :utc_datetime
+      assert datetime_schema.__schema__(:type, :occurred_at) == :utc_datetime
 
       on_exit(fn ->
         Enum.each(defined_module_names, fn defined_module_name ->
