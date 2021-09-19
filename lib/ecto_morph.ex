@@ -44,14 +44,14 @@ defmodule EctoMorph do
 
   def type_for_schema_property(schema, %{"$ref" => [:root | relative_refs_path]}) do
     object = get_in(schema.schema, relative_refs_path)
+
     type_for_schema_property(schema, object)
   end
 
-
-     # %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
-     #         new_schema_property = get_in(unquote(schema).schema, relative_refs_path)
-     #         IO.inspect(new_schema_property, label: "from derp")
-     #         EctoMorph.add_ecto_field(unquote(key), new_schema_property, unquote(schema))
+  # %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
+  #         new_schema_property = get_in(unquote(schema).schema, relative_refs_path)
+  #         IO.inspect(new_schema_property, label: "from derp")
+  #         EctoMorph.add_ecto_field(unquote(key), new_schema_property, unquote(schema))
 
   # NOOOO
   # defmacro add_ecto_field_derp(key, schema_property, schema) do
@@ -84,7 +84,10 @@ defmodule EctoMorph do
               EctoMorph.embed_one_inline_schema(unquote(key), schema_property, unquote(schema))
 
             %{"type" => _type} ->
-              field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema),schema_property))
+              field(
+                :"#{unquote(key)}",
+                EctoMorph.type_for_schema_property(unquote(schema), schema_property)
+              )
           end
 
         %{"type" => "object", "properties" => _} ->
@@ -95,7 +98,10 @@ defmodule EctoMorph do
           )
 
         %{"type" => _type} ->
-          field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema), unquote(schema_property)))
+          field(
+            :"#{unquote(key)}",
+            EctoMorph.type_for_schema_property(unquote(schema), unquote(schema_property))
+          )
       end
     end
   end
@@ -334,32 +340,54 @@ defmodule EctoMorph do
   end
 
   def schemaless_changeset(data, attrs, schema, node \\ nil) do
-    properties = node["properties"] || schema.schema["properties"]
+    properties =
+      if is_nil?(node) do
+        schema.schema["properties"]
+      else
+        node["properties"]
+      end
 
-    types = Enum.reduce(properties, %{}, fn {key, schema_property}, acc ->
-      type = type_for_schema_property(schema, schema_property)
-      Map.put(acc, String.to_atom(key), type)
-    end)
+    types =
+      Enum.reduce(properties, %{}, fn {key, schema_property}, acc ->
+        type = type_for_schema_property(schema, schema_property)
+        Map.put(acc, String.to_atom(key), type)
+      end)
 
-    {embed_keys, cast_keys} = Enum.split_with(types, fn
-      {_key, {:embed, _}} ->
-        true
-      _ ->
-        false
-     end)
+    {embed_keys, cast_keys} =
+      Enum.split_with(types, fn
+        {_key, {:embed, _}} ->
+          true
+
+        _ ->
+          false
+      end)
 
     # Convert from keyword list to map
     cast_keys = Enum.into(cast_keys, %{})
     embed_keys = Enum.into(embed_keys, %{})
 
-    changeset = {data, types}
+    changeset =
+      {data, types}
       |> Ecto.Changeset.cast(attrs, Map.keys(cast_keys))
 
-    changeset = Enum.reduce(embed_keys, changeset, fn {key, _}, changeset ->
-      child_properties = Map.get(properties, Atom.to_string(key))
+    changeset =
+      Enum.reduce(embed_keys, changeset, fn {key, _}, changeset ->
+        child_properties = Map.get(properties, Atom.to_string(key))
 
-      Ecto.Changeset.cast_embed(changeset, key, with: fn struct, attrs -> schemaless_changeset(struct, attrs, schema, child_properties) end)
-    end)
+        child_properties =
+          if child_properties["$ref"] do
+            %{"$ref" => [:root | relative_refs_path]} = child_properties
+            get_in(schema.schema, relative_refs_path)
+          else
+            child_properties
+          end
+
+        Ecto.Changeset.cast_embed(changeset, key,
+          with: fn struct, attrs ->
+            schemaless_changeset(struct, attrs, schema, child_properties)
+          end
+        )
+      end)
 
     if changeset.valid? do
       case ExJsonSchema.Validator.validate(schema, changeset.params) do

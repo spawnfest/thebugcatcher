@@ -106,46 +106,47 @@ defmodule EctoMorphTest do
 
   describe "schemaless_changeset/3" do
     setup do
-      schema = %{
-        "type" => "object",
-        "properties" => %{
-          "foo" => %{
-            "type" => "string"
-          },
-          "occurred_at" => %{
-            "type" => "string",
-            "format" => "date-time"
-          },
-          "child" => %{
-            "type" => "object",
-            "properties" => %{
-              "name" => %{
-                "type" => "string"
+      schema =
+        %{
+          "type" => "object",
+          "properties" => %{
+            "foo" => %{
+              "type" => "string"
+            },
+            "occurred_at" => %{
+              "type" => "string",
+              "format" => "date-time"
+            },
+            "child" => %{
+              "type" => "object",
+              "properties" => %{
+                "name" => %{
+                  "type" => "string"
+                }
               }
+            },
+            "name" => %{
+              "$ref" => "#/$defs/name"
+            },
+            "car" => %{
+              "$ref" => "#/$defs/car"
             }
           },
-          "name" => %{
-            "$ref" => "#/$defs/name"
-          },
-          "car" => %{
-            "$ref" => "#/$defs/car"
-          },
-        },
-        "$defs" => %{
-          "name" => %{
-            "type" => "string"
-          },
-          "car" => %{
-            "type" => "object",
-            "properties" => %{
-              "color" => %{
-                "type" => "string"
+          "$defs" => %{
+            "name" => %{
+              "type" => "string"
+            },
+            "car" => %{
+              "type" => "object",
+              "properties" => %{
+                "color" => %{
+                  "type" => "string"
+                }
               }
             }
-          },
+          }
         }
-      }
-      |> ExJsonSchema.Schema.resolve()
+        |> ExJsonSchema.Schema.resolve()
 
       %{schema: schema}
     end
@@ -174,20 +175,21 @@ defmodule EctoMorphTest do
       struct = Ecto.Changeset.apply_changes(changeset)
 
       assert struct == %{
-        foo: "bar",
-        occurred_at: occurred_at,
-        child: %{
-          name: "bob"
-        },
-        name: "Adi",
-        car: %{
-          color: "red"
-        }
-      }
+               foo: "bar",
+               occurred_at: occurred_at,
+               child: %{
+                 name: "bob"
+               },
+               name: "Adi",
+               car: %{
+                 color: "red"
+               }
+             }
     end
 
     test "invalid attrs", %{schema: schema} do
       data = %{}
+
       params = %{
         foo: 1,
         occurred_at: 1,
@@ -205,11 +207,11 @@ defmodule EctoMorphTest do
       #          occurred_at: [{"Expected to be a valid ISO 8601 date-time.", []}]
       #        }
 
-     assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-       foo: [{"is invalid", [type: :string, validation: :cast]}],
-       occurred_at: [{"is invalid", [type: :utc_datetime, validation: :cast]}],
-       child: %{name: [{"is invalid", [type: :string, validation: :cast]}]}
-     }
+      assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
+               foo: [{"is invalid", [type: :string, validation: :cast]}],
+               occurred_at: [{"is invalid", [type: :utc_datetime, validation: :cast]}],
+               child: %{name: [{"is invalid", [type: :string, validation: :cast]}]}
+             }
     end
   end
 end

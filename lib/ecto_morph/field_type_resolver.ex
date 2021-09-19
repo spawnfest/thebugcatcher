@@ -17,19 +17,20 @@ defmodule EctoMorph.FieldTypeResolver do
   def run("string", "date-time"), do: :utc_datetime
   def run("string", _), do: :string
 
-  def run("object", _), do: {:embed,
-     %Ecto.Embedded{
-       cardinality: :one,
-       field: :todo,
-       # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
-       on_cast: fn struct, params -> 1 end,
-       on_replace: :raise,
-       ordered: true,
-       owner: 2,
-       related: EctoMorph.Nested,
-       unique: true
-     }
-   }
+  def run("object", _),
+    do:
+      {:embed,
+       %Ecto.Embedded{
+         cardinality: :one,
+         field: :todo,
+         # on_cast: fn struct, params -> schema_module.changeset(struct, params) end,
+         on_cast: fn struct, params -> 1 end,
+         on_replace: :raise,
+         ordered: true,
+         owner: 2,
+         related: EctoMorph.Nested,
+         unique: true
+       }}
 
   # def run("object", _), do: :map
 
