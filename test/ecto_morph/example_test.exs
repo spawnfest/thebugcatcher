@@ -80,7 +80,8 @@ defmodule EctoMorph.ExampleTest do
     assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
              foo: %{
                foo: [{"Type mismatch. Expected String but got Integer.", []}],
-               occurred_at: [{"Expected to be a valid ISO 8601 date-time.", []}]
+               occurred_at: [{"Expected to be a valid ISO 8601 date-time.", []}],
+               child: %{name: [{"Type mismatch. Expected String but got Integer.", []}]}
              }
            }
   end

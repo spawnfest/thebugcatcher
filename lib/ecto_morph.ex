@@ -112,6 +112,7 @@ defmodule EctoMorph do
           |> cast(params, [])
           |> validate()
           |> cast_fields_if_valid()
+          |> maybe_apply_nested_ecto_morph_errors()
         end
 
         defp cast_fields_if_valid(%{valid?: true} = changeset) do
@@ -138,6 +139,41 @@ defmodule EctoMorph do
           changeset
         end
 
+        def maybe_apply_nested_ecto_morph_errors(%{valid?: true} = changeset) do
+          changeset
+        end
+
+        def maybe_apply_nested_ecto_morph_errors(changeset) do
+          errors = Keyword.get_values(changeset.errors, :nested_ecto_morph_errors)
+
+          IO.inspect(changeset.errors, label: "error")
+          IO.inspect(errors, label: "maybe")
+
+          if length(errors) >= 1 do
+            Enum.reduce(errors, changeset, fn {msg, keys}, changeset ->
+              fields = Keyword.fetch!(keys, :fields)
+              apply_field_path_error(changeset, msg, fields)
+            end)
+          else
+            changeset
+          end
+        end
+
+        def apply_field_path_error(changeset, msg, fields) do
+          IO.inspect(changeset, label: "changeset")
+          IO.inspect(msg, label: "msg")
+          IO.inspect(fields, label: "fields")
+
+          path_fields = Enum.slice(fields, 0..-2)
+          field = Enum.at(fields, -1)
+
+          IO.inspect(path_fields, label: "path_fields")
+          IO.inspect(field, label: "field")
+
+          get_in(changeset, fields)
+          # Ecto.Changeset.get_change(changeset, field)
+        end
+
         defp validate(changeset) do
           case ExJsonSchema.Validator.validate(@schema, changeset.params) do
             :ok ->
@@ -145,14 +181,21 @@ defmodule EctoMorph do
 
             {:error, errors} ->
               Enum.reduce(errors, changeset, fn {msg, path}, changeset ->
-                field = field_from_path(path)
-                add_error(changeset, :"#{field}", msg)
+                fields = field_from_path(path)
+
+                if length(fields) == 1 do
+                  [field] = fields
+                  add_error(changeset, field, msg)
+                else
+                  changeset
+                  |> add_error(:nested_ecto_morph_errors, msg, [fields: fields])
+                end
               end)
           end
         end
 
         defp field_from_path(path) do
-          String.split(path, "#/") |> Enum.at(-1)
+          String.split(path, "#/") |> Enum.at(-1) |> String.split("/") |> Enum.map(&String.to_atom/1)
         end
       end
     end
