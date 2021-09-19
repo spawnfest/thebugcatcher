@@ -1,4 +1,4 @@
-<img src="logo/logo.png" href="#" width="270" height="190">
+<img src="logo/logo.jpeg" href="#" width="270" height="190">
 
 # EctoMorph
 
