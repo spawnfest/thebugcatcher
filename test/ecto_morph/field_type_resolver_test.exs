@@ -4,6 +4,18 @@ defmodule EctoMorph.FieldTypeResolverTest do
   alias EctoMorph.FieldTypeResolver
 
   describe "run/1" do
+    test "returns :boolean when given type \"boolean\"" do
+      assert :boolean == FieldTypeResolver.run("boolean")
+    end
+
+    test "returns :decimal when given type \"number\"" do
+      assert :decimal == FieldTypeResolver.run("number")
+    end
+
+    test "returns :integer when given type \"integer\"" do
+      assert :integer == FieldTypeResolver.run("integer")
+    end
+
     test "returns :string when given type \"string\"" do
       assert :string == FieldTypeResolver.run("string")
     end

@@ -14,10 +14,11 @@ defmodule EctoMorph.FieldTypeResolver do
 
   def run(type, format \\ nil)
 
+  def run("boolean", _), do: :boolean
+  def run("integer", _), do: :integer
+  def run("number", _), do: :decimal
   def run("string", "date-time"), do: :utc_datetime
   def run("string", _), do: :string
-
-  def run("integer", _), do: :integer
 
   def run(type, format), do: raise_error_for_unsupported_type(type, format)
 
