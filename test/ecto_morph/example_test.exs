@@ -44,14 +44,14 @@ defmodule EctoMorph.ExampleTest do
             },
             "required" => ["name"]
           },
-          "name" => %{ 
-            "$ref" => "#/$defs/name" 
-          },
+          "name" => %{
+            "$ref" => "#/$defs/name"
+          }
         },
-        "$defs" => %{ 
-          "name" => %{ 
-            "type" => "string" 
-          },
+        "$defs" => %{
+          "name" => %{
+            "type" => "string"
+          }
         }
       }
       |> ExJsonSchema.Schema.resolve()

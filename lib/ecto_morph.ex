@@ -60,21 +60,28 @@ defmodule EctoMorph do
   #     end
   #   end
   # end
-  defmacro handle_ref(key, schema, relative_refs_path) do
-    quote location: :keep do
-      schema_property = get_in(unquote(schema).schema, unquote(relative_refs_path))
-      EctoMorph.add_ecto_field(unquote(key), schema_property, unquote(schema)) # BREAKS EVERYTHING
-    end
-  end
 
   defmacro add_ecto_field(key, schema_property, schema) do
     quote location: :keep do
       case unquote(schema_property) do
-        %{"$ref" => [:root | relative_refs_path]} -> # e.g.) [:root, "$defs", "name"]
-          EctoMorph.handle_ref(unquote(key), unquote(schema), relative_refs_path) 
+        # e.g.) [:root, "$defs", "name"]
+        %{"$ref" => [:root | relative_refs_path]} ->
+          schema_property = get_in(unquote(schema).schema, relative_refs_path)
+
+          case schema_property do
+            %{"type" => "object", "properties" => _} ->
+              EctoMorph.embed_one_inline_schema(unquote(key), schema_property, unquote(schema))
+
+            %{"type" => _type} ->
+              field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(schema_property))
+          end
 
         %{"type" => "object", "properties" => _} ->
-          EctoMorph.embed_one_inline_schema(unquote(key), unquote(schema_property), unquote(schema))
+          EctoMorph.embed_one_inline_schema(
+            unquote(key),
+            unquote(schema_property),
+            unquote(schema)
+          )
 
         %{"type" => _type} ->
           field(:"#{unquote(key)}", EctoMorph.type_for_schema_property(unquote(schema_property)))
