@@ -4,6 +4,9 @@
 
 Morph between Ecto & JSON Schemas!
 
+Use JSON Schemas to generate Ecto Schemas and Changesets that get evaluated
+at runtime.
+
 ## Use Cases
 
 #### Example 1: Injesting JSON data & Coercing to Elixir data
@@ -33,29 +36,17 @@ defmodule MyMessageCenter.MessageProcessor do
 end
 ```
 
-#### Example 2: Producing a JSON schema from an Ecto schema
+#### Example 2: Sharing Ecto Schemas across multiple applications
 
-Given an existing schema:
+This project allows us to share Ecto Schemas between two applications without
+a new mix dependency as long as both have `ecto_morph`. The json schema files
+also act as contracts for both those applications
 
-```elixir
-defmodule MyApp.User do
-  use Ecto.Schema
-  import Ecto.Changeset
 
-  schema do
-    field :potato, :string
-  end
-end
-```
+#### Example 3: API contracts as JSON schema
 
-our app can produce
-
-```elixir
-defmodule MyApp.JsonSchemaFromEctoSchema do
-
-  @spec run(%MyApp.User{}) :: {:ok, json_string} | {:error, error_string}
-  def run(schema) do
-    # something
-  end
-end
-```
+By using JSON Schemas as API contracts, we can validate parameters for a
+Phoenix Controller using EctoMorph in Ecto. This allows us to follow the well
+established pattern of validating request parameters using embedded schemas
+while still being able to share them as JSON schema contracts with other
+applications.
