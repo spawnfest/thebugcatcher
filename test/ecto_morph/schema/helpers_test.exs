@@ -101,7 +101,13 @@ defmodule EctoMorph.Schema.HelpersTest do
       ## Kick-off
       returned_changeset = Helpers.maybe_apply_nested_ecto_morph_errors(changeset)
 
-      assert returned_changeset == changeset
+      expected_changeset =
+        %ExampleSchema{}
+        |> Ecto.Changeset.cast(%{}, [])
+
+      expected_changeset = %{expected_changeset | valid?: false}
+
+      assert returned_changeset == expected_changeset
     end
 
     test "returns changeset with errors when nested_ecto_morph_errors with " <>
@@ -136,8 +142,8 @@ defmodule EctoMorph.Schema.HelpersTest do
       grand_child = Enum.at(grand_children, 0)
 
       assert grand_child.errors == [
-        grand_child_name: {"Grand Child Error", []}
-      ]
+               grand_child_name: {"Grand Child Error", []}
+             ]
     end
   end
 end

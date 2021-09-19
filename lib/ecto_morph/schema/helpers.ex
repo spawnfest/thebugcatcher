@@ -80,7 +80,8 @@ defmodule EctoMorph.Schema.Helpers do
       changeset_list when is_list(changeset_list) ->
         case tail do
           [n] when is_integer(n) ->
-            changeset_list = changeset_list
+            changeset_list =
+              changeset_list
               |> List.update_at(n, fn field_changeset ->
                 Ecto.Changeset.add_error(field_changeset, field, msg)
               end)
@@ -140,6 +141,7 @@ defmodule EctoMorph.Schema.Helpers do
       case Integer.parse(v) do
         {int, _} ->
           int
+
         :error ->
           String.to_atom(v)
       end

@@ -165,7 +165,7 @@ defmodule EctoMorph.Schema.DefinerTest do
 
     test "adds errors for invalid data string field assignment" do
       invalid_params = %{
-        "title" => 1,
+        "title" => 1
       }
 
       # Needs to be dynamic to avoid warnings
@@ -175,13 +175,13 @@ defmodule EctoMorph.Schema.DefinerTest do
 
       # error assertions
       assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-               title: [{"is invalid", [type: :string, validation: :cast]}],
+               title: [{"is invalid", [type: :string, validation: :cast]}]
              }
     end
 
     test "adds errors for invalid data array field assignment" do
       invalid_params = %{
-        "names" => [1],
+        "names" => [1]
       }
 
       # Needs to be dynamic to avoid warnings
@@ -191,7 +191,7 @@ defmodule EctoMorph.Schema.DefinerTest do
 
       # error assertions
       assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-        names: [{"is invalid", [type: {:array, :string}, validation: :cast]}],
+               names: [{"is invalid", [type: {:array, :string}, validation: :cast]}]
              }
     end
 
@@ -201,7 +201,7 @@ defmodule EctoMorph.Schema.DefinerTest do
           %{"color" => "apple red"},
           %{"color" => "banana yellow"},
           %{}
-        ],
+        ]
       }
 
       # Needs to be dynamic to avoid warnings
@@ -211,16 +211,17 @@ defmodule EctoMorph.Schema.DefinerTest do
 
       # error assertions
       assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-        cars: [
-          %{}, 
-          %{}, 
-          %{
-            cars: [ # would prefer that this key were `color:`
-              {"Required property color was not present.", []}
-            ]
-          },
-        ]
-      }
+               cars: [
+                 %{},
+                 %{},
+                 %{
+                   # would prefer that this key were `color:`
+                   cars: [
+                     {"Required property color was not present.", []}
+                   ]
+                 }
+               ]
+             }
     end
   end
 end
