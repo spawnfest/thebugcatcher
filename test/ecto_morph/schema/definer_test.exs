@@ -49,6 +49,12 @@ defmodule EctoMorph.Schema.DefinerTest do
                   }
                 }
               }
+            },
+            "tags" => %{
+              "type" => "array",
+              "items" => %{
+                "type" => "string"
+              }
             }
           },
           "$defs" => %{
@@ -89,6 +95,10 @@ defmodule EctoMorph.Schema.DefinerTest do
         "bars" => [
           %{"name" => "barname"},
           %{"name" => "wildrover"}
+        ],
+        "tags" => [
+          "cool",
+          "sometimes"
         ]
       }
 
@@ -125,6 +135,10 @@ defmodule EctoMorph.Schema.DefinerTest do
                    id: nil,
                    name: "wildrover"
                  }
+               ],
+               tags: [
+                 "cool",
+                 "sometimes"
                ]
              }
     end

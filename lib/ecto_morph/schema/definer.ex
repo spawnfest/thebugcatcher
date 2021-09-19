@@ -59,7 +59,7 @@ defmodule EctoMorph.Schema.Definer do
         #     unquote(schema)
         #   )
 
-        %{"type" => _type} ->
+        %{"type" => _type, "properties" => _} ->
           define_current_schema_property(unquote(internal_type))
 
           embeds_many :"#{unquote(key)}", :"#{Macro.camelize(unquote(key))}" do
@@ -71,6 +71,12 @@ defmodule EctoMorph.Schema.Definer do
           end
 
           undefine_current_schema_property()
+
+        %{"type" => _type} ->
+          field(
+            :"#{unquote(key)}",
+            {:array, EctoMorph.type_for_schema_property(unquote(internal_type))}
+          )
       end
     end
   end
