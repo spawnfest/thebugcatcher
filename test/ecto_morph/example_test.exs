@@ -60,8 +60,9 @@ defmodule EctoMorph.ExampleTest do
                child: %{
                  __struct__: Foo.Child,
                  name: "bob",
-                },
-              },
+                 id: nil
+               }
+             },
              id: nil
            }
   end
@@ -70,15 +71,30 @@ defmodule EctoMorph.ExampleTest do
     example = %EctoMorph.Example{}
 
     changeset =
-      EctoMorph.Example.changeset(example, %{"foo" => %{"foo" => 1, "occurred_at" => "X"}})
+      EctoMorph.Example.changeset(example, %{
+        "foo" => %{"foo" => 1, "occurred_at" => "X", "child" => %{"name" => 1}}
+      })
 
     refute changeset.valid?
 
-    assert Ecto.Changeset.traverse_errors(changeset, & &1) == %{
-             foo: %{
-               foo: [{"Type mismatch. Expected String but got Integer.", []}],
-               occurred_at: [{"Expected to be a valid ISO 8601 date-time.", []}]
+    assert Ecto.Changeset.traverse_errors(changeset, & &1) ==
+             %{
+               foo: %{
+                 child: %{
+                   name: [
+                     {"is invalid", [{:type, :string}, {:validation, :cast}]}
+                   ]
+                 },
+                 foo: [
+                   {"is invalid", [{:type, :string}, {:validation, :cast}]}
+                 ],
+                 occurred_at: [
+                   {
+                     "is invalid",
+                     [{:type, :utc_datetime}, {:validation, :cast}]
+                   }
+                 ]
+               }
              }
-           }
   end
 end
